@@ -1,0 +1,9 @@
+project:
+  title: "Formation Seurat pour la plateforme Genotoul Biostat"
+  output-dir: public
+  execute-dir: project
+  render:
+    - "*.qmd"
+    - "!vignettes/*"
+
+

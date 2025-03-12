@@ -1,0 +1,142 @@
+---
+title: "Materiel pour slides"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    number-sections: true
+date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
+execute:
+  cache: true
+---
+
+
+# Introduction
+
+### bulk RNA-seq vs single-cell RNAseq
+
+![bulkRNAseq](images/BulkRNA.png)
+
+![scRNAseq](images/singlecell.png)
+
+![bulk vs scRNAseq](images/scRNAseq.png)
+
+### scRNAseq data
+
+- $C$ cells, $G$ genes:  $C\leq G$ or $C \approx G$ $\Longrightarrow$ high dimensionality
+- Measures: $y_{cg}\in\mathbb{N}$  = count expression measure of gene $g$ in cell $c$
+- Technical and biological noise
+- High variability
+- Zero-inflated data $\Longrightarrow$ "sparsity" 
+($\geq 80\%$ of zeros per raw, dropouts). 
+
+### Biological questions
+
+:::: {.columns}
+::: {.column width="50%"}
+- Are there distinct subpopulations of cells? - For each cell type, what are the marker genes? 
+- How visualize the cells? 
+- Are there continuums of differentiation / activation cell states? 
+- ...
+:::
+::: {.column width="50%"}
+![](images/QBio.jpg)
+(\tiny Rostom et al, FEBS 2017)
+:::
+:::
+
+
+### Statistical analysis
+:::: {.columns}
+::: {.column width="50%"}
+- Clustering of cells 
+- Variable (gene) selection in learning or differential analysis (hypothesis testing) 
+- Reduction dimension 
+- Network inference
+- Pseudo-time inference
+- ...
+:::
+::: {.column width="50%"}
+![](images/QBio.jpg)
+(\tiny Rostom et al, FEBS 2017)
+:::
+:::
+
+### Number of available tools for scRNAseq data
+:::: {.columns}
+::: {.column width="50%"}
+![](images/Nbtools.png)
+:::
+::: {.column width="50%"}
+![](images/LogoscRNAtools.png)
+Many packages are released regularly for scRNAseq data analysis.
+You can follow the news in the "Updates" section of scRNA-tools.
+<!--
+\underline{\url{https://www.scrna-tools.org/updates}}} 
+-->
+:::
+:::
+![](images/Nbtools2.png)
+
+
+### Some bio-info-stat. pipelines/workflows
+
+:::: {.columns}
+::: {.column width="50%"}
+- [Seurat](https://satijalab.org/seurat/) <!--\cite{Satija15}-->
+![](images/Seurat.png)
+
+
+- [SCANPY](https://github.com/theislab/Scanpy)<!--\cite{scanpy:wolf18}-->
+![](images/Scanpy.png)
+
+- [Sincell](https://bioconductor.org/packages/release/bioc/html/sincell.html) 
+<!--\cite{Sincell15} -->	![](images/sincell.png)
+
+- [simpleSingleCell](https://bioconductor.org/packages/release/workflows/html/simpleSingleCell.html)
+<!--\cite{LunWorkflow16}-->
+![](images/WorkflowLun.png)
+![](images/simpleSingleCell.png)
+:::
+::: {.column width="50%"}
+- [SINCERA](https://research.cchmc.org/pbge/sincera.html)    
+<!--\cite{GuoSINCERA15}-->
+![](images/SINCERAschema.png)
+
+- [Scedar](https://github.com/logstar/scedar) <!--\cite{scedar}-->
+![](images/Scedar.png)
+
+- $\ldots$
+:::
+:::
+
+
+# Preparation des données
+
+## Alignement - filtrage CellRanger
+
+### CellRanger
+
+![](images/10XGenomics.png)
+![](images/CellRanger-1.png)
+![](images/CellRanger-Pos.png)
+
+## Seurat / scanpy / ...
+
+-   Expliquer que chaque pipeline a son type d'Objet
+    -   Seurat en R $\longrightarrow$ Seurat Object
+    -   Scanpy en python $\longrightarrow$ AnnData class
+-   Dans la suite on va travailler avec Seurat
+-   création de l'objet Seurat (SO) pour démarrer schéma évolutif de ce que l'on a rempli dans l'object
+
+![](images/Scanpy.png)
+![](images/Seurat.png)
+
+### Seurat object
+
+### Example
+
+
+
+

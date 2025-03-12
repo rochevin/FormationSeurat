@@ -1,9 +1,11 @@
 ---
 title: "Plan du cours - Notes pour construction"
-output:
-  html_document:
-    theme: united
-    df_print: kable
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    number-sections: true
 date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
 execute:
   cache: true
@@ -69,5 +71,110 @@ image classique image de différence des tableaux schématique
 -   explication du principe de Louvain
 -   nécessite un parametre de résolution (pas nb de clusters K)
 -   exemple pour une valeur de résolution (FindNeighbour + FindCluster)
+-   exemple de plot sur UMAP, effectifs par classe, ....
 
-### 
+### Choix de la resolution ?
+
+- faire tourner pour plusieurs résolution
+- visualisation par ARI, clustree des différents clusterings obtenus
+- En afficher deux sur UMAP figue dissociée
+- on peut tous les stocker dans objet SO mais attention à bien positionner celui étudié pour la suite
+
+## Marker gene
+
+### Question / objectif
+
+- formalisation du problème
+- naturellement on est sur une question de test
+
+### Wilcoxon
+
+- explication du test de Wilcoxon
+- correction de test multiple
+- sur l'exemple, montrer le grand nombre de gènes sélectionnés
+
+### Problème de double-dipping
+
+- mettre l'exemple classique sur une classe gaussienne
+image de article avec Nicolas
+- reste un probleme ouvert en statistique, loin d'une solution pour le scRNAseq
+
+### AUC
+
+- explication de l'AUC
+- attention ce n'est pas un test
+- choix du seuil ?
+- application sur l'exemple avec FindAllMarkers
+
+### Autres indicateurs dispo
+
+- pct.1 / pct.2
+- log2FC
+
+### Exemple
+
+- on fusionne les deux tableaux obtenus par AUC et wilcox
+- on applique des filtres pour retenir un groupe de genes marqueurs pour chaque cluster
+- visualisation par DoHeatmap
+- dotPlot
+- ridgePlot
+
+### 1 groupe contre un autre
+
+- expliquer que l'o peut faire la même chose mais en précisant une classe contre une autre, un groupe de classes contre un autre groupe de classes
+- fonction FindMarkers
+- le faire sur l'exemple
+
+# Analyse de deux (ou plus) conditions biologiques 
+
+## Integration des données
+
+- pas clair pour moi comment le présenter avec la normalisation, ....
+
+## Reduction de dimension et clustering
+
+- On refait ici les mêmes étapes que dans le cas une condition
+- leur faire faire sur l'exemple pour aller jusqu'à retenir un clustering
+- analyser le clustering répartition cells par cluster par condition, ....
+
+## Analyse differentielle
+
+### Principe
+
+- bien se demander quelle question on veut traiter
+- de nombreuses stratégies mais dépend si réplicats ou pas, type de stratégie, .....
+- donner ici quelques références de review
+- trouver un schéma qui essaie de résumer les types de stratégies
+
+### Méthodes de type pseudobulk
+
+- principe du pseudobulk
+- exemple de DESeq2 
+- illustration
+
+### Point de vue sélection de variables
+
+- NS-Forest ?? 
+
+### ET ...?
+
+A murir
+
+# Pour aller plus loin
+
+## Intégration de différents types d'omiques
+
+## Analyse de données de spatial transcriptomique
+
+- On a en plus la position spatiale, 1 spot <-> 1 cellule
+- On a les SVG (en plus des HVG)
+- Le spatial intervient surtout sur le clustering. Louvain ne prend pas en compte le spatial. Passer par d'autres méthodes et stocker ensuite dans l'objet Seurat
+- visualisation sur le spatial 
+
+## Et au delà de Seurat
+
+- comment on transforme un objet Seurat en autre chose
+- comment on crée un objet Seurat à partir d'autre chose
+- on peut sortir de Seurat pour appliquer une méthode et stocker le résultat dans SO 
+
+- ?? voir la position de ce slide

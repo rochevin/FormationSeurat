@@ -1,0 +1,73 @@
+---
+title: "Plan du cours - Notes pour construction"
+output:
+  html_document:
+    theme: united
+    df_print: kable
+date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
+execute:
+  cache: true
+---
+
+# Preparation des données
+
+## bulk RNA-seq vs single-cell RNAseq
+
+-   présenter les differences entre les deux techno
+
+image classique image de différence des tableaux schématique
+
+## Alignement - filtrage CellRanger
+
+-   expliquer le pipeline general de CellRanger
+-   expliquer le rendu
+-   On obtient une matrice de comptages filtrée (ex: du fichier pbmc3k) on a 3 fichiers (barcodes.tsv / gene.tsv / matrix.mtx) image de CellRanger + type fichier
+
+## Objet Seurat
+
+-   Expliquer que chaque pipeline a son type d'Objet
+    -   Seurat en R $\longrightarrow$ Seurat Object
+    -   Scanpy en python $\longrightarrow$ AnnData class
+-   Dans la suite on va travailler avec Seurat
+-   création de l'objet Seurat (SO) pour démarrer schéma évolutif de ce que l'on a rempli dans l'object
+
+# Pipeline d'analyse d'une condition biologique
+
+## Normalisation et contrôle qualité
+
+### Controles initiaux
+
+### Normalisation
+
+### HVG
+
+## Réduction de dimension
+
+### Objectifs de la réduction de dimension
+
+### PCA
+
+-   scale + runPCA
+-   explication du principe de la PCA
+-   explication des sorties de Seurat
+-   expliquer où c'est stocké dans l'objet
+
+### UMAP
+
+-   utilise au démarrage les coordonnées de PCA
+-   explication du principe de l'UMAP
+-   illustration
+
+## Clustering
+
+### Principe / objectif du clustering
+
+### Some methods
+
+### Dans Seurat
+
+-   explication du principe de Louvain
+-   nécessite un parametre de résolution (pas nb de clusters K)
+-   exemple pour une valeur de résolution (FindNeighbour + FindCluster)
+
+### 

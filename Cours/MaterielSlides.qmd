@@ -138,18 +138,30 @@ You can follow the news in the "Updates" section of scRNA-tools.
 ### Example
 
 ```{r init}
-#library(dplyr)
-#library(Seurat)
-#library(patchwork)
+#| message: false
+#| warning: false
+library(dplyr)
+library(Seurat)
+library(patchwork)
 
 # Load the PBMC dataset
-#pbmc.data <- Read10X(data.dir = "../data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
+pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
+
 # Initialize the Seurat object with the raw (non-normalized data).
-#pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
-#pbmc
+pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
+pbmc
 ```
 
 On peut montrer le contenu stocké vis-à-vis d'un schéma sur la structure de SO
+
+```{r}
+class(pbmc)
+dim(pbmc)
+
+pbmc@assays$RNA$counts[10:20,1:15]
+Assays(pbmc)
+```
+
 
 # Pipeline d'analyse d'une condition biologique
 
@@ -159,20 +171,25 @@ On peut montrer le contenu stocké vis-à-vis d'un schéma sur la structure de S
 
 - A FAIRE
 
+- Il y a déjà par défaut à la création de l'objet **SO**, le calcul de nCount_RNA et nFeature_RNA disponible dans meta.data
 
 ```{r}
-#pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
-#head(pbmc@meta.data, 5)
-#VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+pbmc@meta.data[1:10,]
+VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA"), ncol = 2)
+```
 
-# FeatureScatter is typically used to visualize feature-feature relationships, but can be used
-# for anything calculated by the object, i.e. columns in object metadata, PC scores etc.
+- Mitochondrial counts
 
-#plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
-#plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
-#plot1 + plot2
+```{r}
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+head(pbmc@meta.data, 5)
+VlnPlot(pbmc, features = c("percent.mt"))
+```
 
-
+```{r}
+plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1 + plot2
 ```
 
 ### Selecting cells
@@ -180,37 +197,151 @@ On peut montrer le contenu stocké vis-à-vis d'un schéma sur la structure de S
 Filtrage préliminaire des cellules à l'aide de ces indicateurs
 
 ```{r}
-#pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+dim(pbmc)
 ```
-
 
 
 ### Normalisation
 
 - Bcp de stratégies possibles pour normaliser les données
 - Dans Seurat, méthodes disponibles
-  + "LogNormalize" : .....
-  + "SCTransform" : .....
+  + "LogNormalize" : dans option normalization.method
+  + "CLR": dans option normalization.method
+  + "RC" : dans option normalization.method
+  + "SCTransform" : il faut passer par une autre fonction
   
 ```{r}
-# pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
-# pbmc@assays$ .....
-# pbmc[["RNA"]]$data
+ pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
+pbmc@assays$RNA$data[10:20,1:10]
+# pbmc[["RNA"]]$data[10:20,1:10]
+# dim(pbmc[["RNA"]]$data)
+
+
+# pbmc2<-SCTransform(pbmc) ??????
 ```
   
-
 ### HVG
+
+- Identification of highly variable features
+- Exhibit high cell-to-cell variation in the dataset 
+
+![](captureContent/ExplicationHVG-Seurat.png) 
+
+Stuart et al. (Cell, 2019). Comprehensive Integration of Single-Cell Data 
+
+Dans la fonction FindVariableFeatures, option selection.method
+
+- "vst": First, fits a line to the relationship of log(variance) and log(mean) using local polynomial regression (loess). Then standardizes the feature values using the observed mean and expected variance (given by the fitted line). Feature variance is then calculated on the standardized values after clipping to a maximum (see clip.max parameter).
+
+- "mean.var.plot" (mvp): First, uses a function to calculate average expression (mean.function) and dispersion (dispersion.function) for each feature. Next, divides features into num.bin (default 20) bins based on their average expression, and calculates z-scores for dispersion within each bin. The purpose of this is to identify variable features while controlling for the strong relationship between variability and average expression
+
+- "dispersion" (disp): selects the genes with the highest dispersion values
+
+```{r}
+pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
+
+# Identify the 10 most highly variable genes
+top10<-head(VariableFeatures(pbmc), 10)
+top10
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(pbmc)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot2
+```
+
+
 
 ## Réduction de dimension
 
 ### Objectifs de la réduction de dimension
 
-### PCA
+- Minimize curse of dimensionality\vspace*{0.3cm}
+- Allow visualization\vspace*{0.3cm}
+- Reduce computational time\vspace*{0.3cm}
+- \ldots \vspace*{0.3cm}
+- But beware of the interpretations after!\vspace*{0.3cm}
 
--   scale + runPCA
+
+### Scaling the data
+
+Vignette Seurat: 
+- Shifts the expression of each gene, so that the mean expression across cells is 0
+- Scales the expression of each gene, so that the variance across cells is 1
+This step gives equal weight in downstream analyses, so that highly-expressed genes do not dominate
+- The results of this are stored in pbmc[["RNA"]]$scale.data
+By default, only variable features are scaled.
+You can specify the features argument to scale additional features
+
+```{r}
+pbmc<-ScaleData(pbmc)
+Layers(pbmc[["RNA"]])
+pbmc[["RNA"]]$scale.data[10:20,1:10]
+```
+
+### Several methods
+
+Several methods are available:
+- PCA, 
+- t-SNE, 
+- UMAP, 
+- ZIFA, 
+- ZINB-WaVe, 
+- SWNE, 
+- Diffusion MAP, 
+- pCMF, 
+- $\ldots$ 
+
+Comparaison des rendus avec [Sleepwalk](https://anders-biostat.github.io/sleepwalk/#)
+
+
+### Principle of PCA
 -   explication du principe de la PCA
+
+### PCA with Seurat
+
+-   scale + runPCA()
 -   explication des sorties de Seurat
 -   expliquer où c'est stocké dans l'objet
+
+```{r}
+#| message: false
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+pbmc@reductions$pca
+str(pbmc@reductions$pca)
+head(pbmc@reductions$pca@cell.embeddings)    #head(pbmc[["pca"]]@cell.embeddings)
+head(pbmc@reductions$pca@feature.loadings)
+```
+
+- cell.embedding : coordonnées des projections des cellules sur les différents axes princpaux
+- feature.loadings : correlations entre genes et composantes principales
+
+```{r}
+library(corrplot)
+corrplot(pbmc[["pca"]]@feature.loadings[c("CST3", "TYROBP", "LST1", "AIF1", "FTL"),1:5],method="ellipse")
+```
+
+```{r}
+print(pbmc[["pca"]], dims = 1:3, nfeatures = 5)
+```
+
+```{r}
+VizDimLoadings(pbmc, dims = 1:2, reduction = "pca")
+```
+
+```{r}
+DimPlot(pbmc, reduction = "pca") + NoLegend()
+```
+
+```{r}
+DimHeatmap(pbmc, dims = 1:2, cells = 500, balanced = TRUE)
+```
+
+```{r}
+ElbowPlot(pbmc)
+```
+
 
 ### UMAP
 
@@ -218,18 +349,61 @@ Filtrage préliminaire des cellules à l'aide de ces indicateurs
 -   explication du principe de l'UMAP
 -   illustration
 
+
+```{r}
+#| message: false
+pbmc <- FindNeighbors(pbmc, dims = 1:10)
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+DimPlot(pbmc, reduction = "umap")
+```
+
+
+
 ## Clustering
 
 ### Principe / objectif du clustering
 
+- Goal : organizing cells into groups whose members are similar in some way 
+- Fundamental question : What is meant by "similar cells"? 
+- The number of clusters $K$ is unknown 
+- Typical clustering methods : 
+	+ Hierarchical clustering (CAH)
+	+ Kmeans clustering
+	+ Graph-based clustering
+	+ Model-based clustering 
+	+ ...
+
+
 ### Some methods
 
+<!--
+\textcolor{blue}{\tiny \cite{Duo18}}\\
+\textcolor{blue}{\tiny \cite{Freytag18}}\\
+\textcolor{blue}{\tiny \cite{petegrosso2019}}\\ 
+\textcolor{blue}{\tiny \cite{zhang2020review}}
+-->
+
+![](images/TableauReviewMethodesClust.png)
+
 ### Dans Seurat
+
+- Calculate k-nearest neighbors and construct the SNN graph
+(based on Euclidean distance in PCA space)
+- Optimize a modularity function to determine clusters - Louvain’s
+algorithm
+- Sensitive choice of the resolution parameter
+(involve the number of clusters K)
 
 -   explication du principe de Louvain
 -   nécessite un parametre de résolution (pas nb de clusters K)
 -   exemple pour une valeur de résolution (FindNeighbour + FindCluster)
 -   exemple de plot sur UMAP, effectifs par classe, ....
+
+```{r}
+pbmc <- FindClusters(pbmc, resolution = 0.5)
+table(pbmc@meta.data$seurat_clusters)
+DimPlot(pbmc, reduction = "umap") # par défaut il colore par seurat_clusters qui n'existait pas avant ?!
+```
 
 ### Choix de la resolution ?
 
@@ -238,6 +412,51 @@ Filtrage préliminaire des cellules à l'aide de ces indicateurs
 - En afficher deux sur UMAP figue dissociée
 - on peut tous les stocker dans objet SO mais attention à bien positionner celui étudié pour la suite
 
+```{r}
+list_resolutions<-seq(0.1,1,by=0.1)
+for (r in list_resolutions){
+    pbmc <- FindClusters(pbmc, resolution = r, cluster.name = paste0("Clusters_", r))
+}
+head(pbmc@meta.data)
+```
+
+```{r}
+#| message: false
+
+# Visualisation ARI - fonctions auxiliaires
+source("Cours/FunctionsAux.R")
+ari_matrix <- ARI_matrix(pbmc, list_resolutions)
+heatmapari(ari_matrix, list_resolutions)
+
+# Nb de clusters
+NbCluster_gg(pbmc, list_resolutions)
+
+# Comparaison visuelle des clusterings obtenus
+p1<-DimPlot(pbmc,reduction = "umap",group.by = "Clusters_0.3")
+p2<-DimPlot(pbmc,reduction = "umap",group.by = "Clusters_0.4")
+p1+p2
+
+# clustree
+library(clustree)
+clusterplot<-clustree(pbmc, prefix = "Clusters_")
+clusterplot
+```
+
+```{r}
+EffPlot(pbmc,resolution=0.5)
+```
+
+Dans la suite, on va se focaliser sur le clustering obtenu avec la resolution 0.5
+
+```{r}
+Idents(pbmc)<-pbmc@meta.data$Clusters_0.5
+table(Idents(pbmc))
+EffPlot(pbmc,resolution=0.5)
+pbmc$seurat_clusters<-pbmc@meta.data$Clusters_0.5
+```
+
+
+
 ## Marker gene
 
 ### Question / objectif
@@ -245,29 +464,70 @@ Filtrage préliminaire des cellules à l'aide de ces indicateurs
 - formalisation du problème
 - naturellement on est sur une question de test
 
+- Aim: After the identification of cell clusters, we want to find marker genes for each cluster
+- marker gene for one cluster: differential expressed genefor this single cluster (specified in ident.1), compared to all other cells.
+
+- FindMarkers() et FindAllMarkers()
+
 ### Wilcoxon
 
 - explication du test de Wilcoxon
 - correction de test multiple
 - sur l'exemple, montrer le grand nombre de gènes sélectionnés
 
+```{r}
+GeneMkWilcox3<-FindMarkers(pbmc,test.use = "wilcox",ident.1 = 3,logfc.threshold=0.5)
+head(GeneMkWilcox3)
+sum(GeneMkWilcox3$p_val_adj<0.01)
+```
+
+
 ### Problème de double-dipping
 
 - mettre l'exemple classique sur une classe gaussienne
-image de article avec Nicolas
+
+![](images/doubledipping.png)
+
 - reste un probleme ouvert en statistique, loin d'une solution pour le scRNAseq
 
-### AUC
+### AUC (area under the ROC curve) 
 
-- explication de l'AUC
+- explication de l'AUC. ($2\times |\mbox{AUC}-0.5|$ )
 - attention ce n'est pas un test
 - choix du seuil ?
+
+![](images/AUROC1.png)
+![](images/AUC.png)
+
+
 - application sur l'exemple avec FindAllMarkers
+
+```{r}
+GeneMkAUC3<-FindMarkers(pbmc,test.use = "roc",ident.1 = 3,logfc.threshold=0.5)
+head(GeneMkAUC3)
+
+
+```
+
+
+```{r}
+#Select_auc<-markers_auc%>%
+#    filter(myAUC>aucthresh)
+#  Select_auc$gene<-rownames(Select_auc)
+#  Select_wilcox<-markers_wilcoxon%>%
+#    filter(p_val_adj < pvalthresh)
+#  Select_wilcox$gene<-rownames(Select_wilcox)
+#  Select<-merge(Select_auc,Select_wilcox,by="gene")
+```
+
+
 
 ### Autres indicateurs dispo
 
-- pct.1 / pct.2
-- log2FC
+- pct.1 / pct.2 : pct1 and pct2 : $\%$ of cells where the gene is expressed in each group
+- log2FC (avg$\_$logFC) = log fold-change of the average expression between the two groups
+- Choice of thresholds ?
+
 
 ### Exemple
 

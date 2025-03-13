@@ -311,6 +311,7 @@ pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
 pbmc@reductions$pca
 str(pbmc@reductions$pca)
 head(pbmc@reductions$pca@cell.embeddings)    #head(pbmc[["pca"]]@cell.embeddings)
+#head(Embeddings(pbmc@reductions$pca))
 head(pbmc@reductions$pca@feature.loadings)
 ```
 
@@ -395,6 +396,7 @@ algorithm
 (involve the number of clusters K)
 
 -   explication du principe de Louvain
+![](images/Louvain.png)
 -   nécessite un parametre de résolution (pas nb de clusters K)
 -   exemple pour une valeur de résolution (FindNeighbour + FindCluster)
 -   exemple de plot sur UMAP, effectifs par classe, ....
@@ -505,28 +507,18 @@ sum(GeneMkWilcox3$p_val_adj<0.01)
 ```{r}
 GeneMkAUC3<-FindMarkers(pbmc,test.use = "roc",ident.1 = 3,logfc.threshold=0.5)
 head(GeneMkAUC3)
-
-
 ```
-
-
-```{r}
-#Select_auc<-markers_auc%>%
-#    filter(myAUC>aucthresh)
-#  Select_auc$gene<-rownames(Select_auc)
-#  Select_wilcox<-markers_wilcoxon%>%
-#    filter(p_val_adj < pvalthresh)
-#  Select_wilcox$gene<-rownames(Select_wilcox)
-#  Select<-merge(Select_auc,Select_wilcox,by="gene")
-```
-
-
 
 ### Autres indicateurs dispo
 
 - pct.1 / pct.2 : pct1 and pct2 : $\%$ of cells where the gene is expressed in each group
 - log2FC (avg$\_$logFC) = log fold-change of the average expression between the two groups
 - Choice of thresholds ?
+
+```{r}
+head(GeneMkAUC3)
+```
+
 
 
 ### Exemple
@@ -536,6 +528,73 @@ head(GeneMkAUC3)
 - visualisation par DoHeatmap
 - dotPlot
 - ridgePlot
+
+
+```{r}
+GeneMkAUC3$gene<-rownames(GeneMkAUC3)
+GeneMkWilcox3$gene<-rownames(GeneMkWilcox3)
+GeneMkCl3_merge<-merge(GeneMkAUC3,GeneMkWilcox3[,c(1,5,6)],by="gene")
+head(GeneMkCl3_merge)
+```
+
+
+```{r}
+SelectGene<-GeneMkCl3_merge%>%
+    filter(myAUC>0.9)%>%
+    filter(avg_log2FC>2)%>%
+    arrange(desc(myAUC))
+```
+
+```{r}
+VlnPlot(pbmc, features = SelectGene$gene[1:3], layer = "counts", log = TRUE)
+VlnPlot(pbmc, features = SelectGene$gene[1:3], layer = "data", log = TRUE)
+```
+
+```{r}
+FeaturePlot(pbmc, features = SelectGene$gene[1:3])
+```
+
+```{r}
+DotPlot(pbmc,features = SelectGene$gene[1:3])
+```
+
+
+### Exemple complet
+
+- reprise avec la fonction FindAllMArkers() pour le faire automatiquement pour toutes les classes. 
+
+```{r,eval=F}
+GeneMkWilcox<-FindAllMarkers(pbmc,logfc.threshold = 0.1,test.use = "wilcox")
+saveRDS(GeneMkWilcox, file = "data/GeneMkWilcox.rds")
+GeneMkAUC<-FindAllMarkers(pbmc,logfc.threshold = 0.1,test.use = "roc")
+saveRDS(GeneMkAUC, file = "data/GeneMkAUC.rds")
+```
+
+```{r}
+GeneMkWilcox<-readRDS("data/GeneMkWilcox.rds")
+GeneMkWilcox$gene<-rownames(GeneMkWilcox)
+head(GeneMkWilcox)
+
+GeneMkAUC<-readRDS("data/GeneMkAUC.rds")
+GeneMkAUC$gene<-rownames(GeneMkAUC)
+head(GeneMkAUC)
+
+## PB de merge car gene et cluster ! A revoir
+GeneMk_merge<-merge(GeneMkAUC,GeneMkWilcox[,c(1,5,6,7)],by="gene")
+head(GeneMk_merge)
+```
+
+
+```{r}
+GeneMkAUC %>%
+    group_by(cluster) %>%
+    arrange(desc(myAUC))%>%
+    filter(avg_log2FC > 1) %>%
+    slice_head(n = 10) %>%
+    ungroup() -> top10
+DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+```
+
 
 ### 1 groupe contre un autre
 

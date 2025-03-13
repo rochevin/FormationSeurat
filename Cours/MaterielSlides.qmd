@@ -130,13 +130,158 @@ You can follow the news in the "Updates" section of scRNA-tools.
 -   Dans la suite on va travailler avec Seurat
 -   création de l'objet Seurat (SO) pour démarrer schéma évolutif de ce que l'on a rempli dans l'object
 
-![](images/Scanpy.png)
-![](images/Seurat.png)
+
+
 
 ### Seurat object
 
 ### Example
 
+```{r init}
+#library(dplyr)
+#library(Seurat)
+#library(patchwork)
+
+# Load the PBMC dataset
+#pbmc.data <- Read10X(data.dir = "../data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
+# Initialize the Seurat object with the raw (non-normalized data).
+#pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
+#pbmc
+```
+
+On peut montrer le contenu stocké vis-à-vis d'un schéma sur la structure de SO
+
+# Pipeline d'analyse d'une condition biologique
+
+## Normalisation et contrôle qualité
+
+### QC metrics
+
+- A FAIRE
+
+
+```{r}
+#pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+#head(pbmc@meta.data, 5)
+#VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
+# FeatureScatter is typically used to visualize feature-feature relationships, but can be used
+# for anything calculated by the object, i.e. columns in object metadata, PC scores etc.
+
+#plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
+#plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+#plot1 + plot2
+
+
+```
+
+### Selecting cells
+
+Filtrage préliminaire des cellules à l'aide de ces indicateurs
+
+```{r}
+#pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+```
+
+
+
+### Normalisation
+
+- Bcp de stratégies possibles pour normaliser les données
+- Dans Seurat, méthodes disponibles
+  + "LogNormalize" : .....
+  + "SCTransform" : .....
+  
+```{r}
+# pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
+# pbmc@assays$ .....
+# pbmc[["RNA"]]$data
+```
+  
+
+### HVG
+
+## Réduction de dimension
+
+### Objectifs de la réduction de dimension
+
+### PCA
+
+-   scale + runPCA
+-   explication du principe de la PCA
+-   explication des sorties de Seurat
+-   expliquer où c'est stocké dans l'objet
+
+### UMAP
+
+-   utilise au démarrage les coordonnées de PCA
+-   explication du principe de l'UMAP
+-   illustration
+
+## Clustering
+
+### Principe / objectif du clustering
+
+### Some methods
+
+### Dans Seurat
+
+-   explication du principe de Louvain
+-   nécessite un parametre de résolution (pas nb de clusters K)
+-   exemple pour une valeur de résolution (FindNeighbour + FindCluster)
+-   exemple de plot sur UMAP, effectifs par classe, ....
+
+### Choix de la resolution ?
+
+- faire tourner pour plusieurs résolution
+- visualisation par ARI, clustree des différents clusterings obtenus
+- En afficher deux sur UMAP figue dissociée
+- on peut tous les stocker dans objet SO mais attention à bien positionner celui étudié pour la suite
+
+## Marker gene
+
+### Question / objectif
+
+- formalisation du problème
+- naturellement on est sur une question de test
+
+### Wilcoxon
+
+- explication du test de Wilcoxon
+- correction de test multiple
+- sur l'exemple, montrer le grand nombre de gènes sélectionnés
+
+### Problème de double-dipping
+
+- mettre l'exemple classique sur une classe gaussienne
+image de article avec Nicolas
+- reste un probleme ouvert en statistique, loin d'une solution pour le scRNAseq
+
+### AUC
+
+- explication de l'AUC
+- attention ce n'est pas un test
+- choix du seuil ?
+- application sur l'exemple avec FindAllMarkers
+
+### Autres indicateurs dispo
+
+- pct.1 / pct.2
+- log2FC
+
+### Exemple
+
+- on fusionne les deux tableaux obtenus par AUC et wilcox
+- on applique des filtres pour retenir un groupe de genes marqueurs pour chaque cluster
+- visualisation par DoHeatmap
+- dotPlot
+- ridgePlot
+
+### 1 groupe contre un autre
+
+- expliquer que l'o peut faire la même chose mais en précisant une classe contre une autre, un groupe de classes contre un autre groupe de classes
+- fonction FindMarkers
+- le faire sur l'exemple
 
 
 

@@ -1,0 +1,81 @@
+---
+title: "Initiation à l'analyse de données single-cell RNA-seq avec Seurat"
+theme: flatly
+---
+
+
+**Mots-clés** : single-cell RNA-seq, clustering, marker genes, integration, Seurat
+
+# Préambule
+
+## Informations essentielles
+
+- **Durée de la formation** : 1,5 jours
+- **Dates** : 16 et 17 juin 2025
+- **Lieu** : INSA Toulouse Département Génie Mathématiques et Modélisation 135 avenue de Rangueil 31077 TOULOUSE
+
+## Description 
+
+La formation a pour but de vous familiariser avec les grandes étapes d’analyse de données single-cell RNA-seq et de les mettre en application à l’aide du package Seurat. Rem: cette formation est aussi une bonne base pour l’étude des données de Spatial Transcriptomics.
+
+## Objectifs
+
+À la fin de la formation, vous serez capable de mener une analyse de données single-cell RNA-seq avec Seurat.
+
+
+
+## Notions abordées
+
+**À mettre à jour une fois le contenu terminé**
+
+- Construction de l’objet Seurat
+- Les grandes étapes du pipeline d’analyse de données single-cell RNA-seq
+- Leur mise en application avec Seurat
+
+## Pré-requis
+
+- Avoir des bases de programmation avec `R`.
+
+
+# Installation des librairies avant le début de la formation
+
+### Dependencies
+
+To install the dependencies, follow these steps:
+
+1. **Install `renv`**:
+   ```r
+   install.packages("renv")
+   ```
+
+2. **Restore the `renv` environment**:
+   ```r
+   renv::restore()
+   ```
+
+
+### Rendering the Project
+
+To render the project using Quarto, follow these steps:
+
+1. **Install Quarto**:
+   Follow the instructions on the [Quarto website](https://quarto.org/docs/get-started/) to install Quarto on your system.
+
+   > Quarto should be already installed in rstudio.
+
+2. **Render the project**:
+   ```sh
+   quarto render 
+   ```
+
+This will generate the rendered output of your project.
+
+By default, vignettes are not rendered. To run vignettes using quarto: 
+
+```sh
+quarto render vignettes/*
+```
+
+
+> Running this for the first time will download the data for the vignettes
+

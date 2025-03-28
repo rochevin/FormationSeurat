@@ -1,9 +1,30 @@
 project:
+  type: website
   title: "Formation Seurat pour la plateforme Genotoul Biostat"
   output-dir: public
   execute-dir: project
   render:
     - "*.qmd"
     - "!vignettes/*"
+execute:
+  freeze: auto
 
 
+website:
+  navbar:
+    right:
+      - icon: house
+        href: index.qmd
+        text: Home
+      - icon: book
+        href: https://genotoul-biostat.pages.mia.inra.fr/website/
+        text: Plateforme de Biostatistique Toulouse - Génotoul
+      - icon: gitlab
+        href: https://forgemia.inra.fr/makingformations/genotoulbiostat/formationseurat
+        aria-label: GitLab
+        text: Dépôt du code source
+  sidebar:
+    style: "docked"
+    search: true
+    contents: auto
+    reader-mode: true

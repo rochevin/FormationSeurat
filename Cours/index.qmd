@@ -1,6 +1,21 @@
 ---
-title: "Formation Seurat"
-format: html
+title: "Initiation à l'analyse de données single-cell RNA-seq avec Seurat"
+subtitle: "Cours" 
+author: 
+  - "Cathy Maugis & Vincent Rocher"
+format:
+  revealjs:
+    incremental: true
+    slide-number: true
+    progress: true
+    fontsize: 25px
+    theme: 
+      - simple
+      - ../Resources/myquartocss.scss
+    view-distance: 200
+code-annotations: below
+logo: images/Biostat_logo-rvb.png
+
 ---
 
 

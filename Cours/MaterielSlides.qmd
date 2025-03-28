@@ -143,6 +143,7 @@ You can follow the news in the "Updates" section of scRNA-tools.
 library(dplyr)
 library(Seurat)
 library(patchwork)
+library(tidyverse)
 
 # Load the PBMC dataset
 pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
@@ -297,6 +298,17 @@ pbmc@assays$RNA$data[10:20,1:10]
 
 ![](captureContent/ExplicationHVG-Seurat.png) 
 
+> **Feature selection for individual datasets**
+In each dataset, we next aimed to identify a subset of features (e.g., genes) exhibiting high variability across cells, and therefore represent heterogeneous features to prioritize for downstream analysis. Choosing genes solely based on their log-normalized single-cell variance fails to account for the mean-variance relationship that is inherent to single-cell RNA-seq. Therefore, we first applied a variance-stabilizing transformation to correct for this [Mayer et al., 2018; Hafemeister and Satija, 2019].
+
+> To learn the mean-variance relationship from the data, we computed the mean and variance of each gene using the unnormalized data (i.e., UMI or counts matrix), and applied log10 transformation to both. We then fit a curve to predict the variance of each gene as a function of its mean, by calculating a local fitting of polynomials of degree 2 (R function loess, span = 0.3). This global fit provided us with a regularized estimator of variance given the mean of a feature. As such, we could use it to standardize feature counts without removing higher-than-expected variation.
+
+> Given the expected variances, we performed the transformation $z_{i,j} = \frac{x_{i,j} - \bar{x}_i}{\sigma_i}$
+
+> where $z_{i,j}$ is the standardized value of feature $i$ in cell $j$, $x_{i,j}$ is the raw value of feature $i$ in cell $j$, $\bar{x}_i$ is the mean raw value for feature $i$, and $\sigma_i$ is the expected standard deviation of feature $i$ derived from the global mean-variance fit. To reduce the impact of technical outliers, we clipped the standardized values to a maximum value of $\sqrt{N}$, where $N$ is the total number of cells. For each gene, we then computed the variance of standardized values across all cells. This variance represents a measure of single-cell dispersion after controlling for mean expression, and we use it directly to rank the features. Unless otherwise noted, we selected the 2,000 genes with the highest standardized variance as “highly variable.” This procedure is implemented in the FindVariableFeatures function in Seurat v3 (selection.method = “vst”).
+
+
+
 Stuart et al. (Cell, 2019). Comprehensive Integration of Single-Cell Data 
 
 Dans la fonction FindVariableFeatures, option selection.method
@@ -368,6 +380,40 @@ Comparaison des rendus avec [Sleepwalk](https://anders-biostat.github.io/sleepwa
 
 ### Principle of PCA
 -   explication du principe de la PCA
+
+```{r}
+#| fig.width: 8
+#| fig.height: 4 
+#| fig.cap: Analyse en composante principale du jeu de données iris sur les deux premières dimensions.
+X <- iris[,c(1,3)]
+# Run PCA
+pca <- princomp(X)
+load <- loadings(pca)
+slope <- load[2, ] / load[1, ]
+cmeans <- apply(X, 2, mean)
+intercept <- cmeans[2] - (slope * cmeans[1])
+
+
+# Plot perpendicular segments
+
+df<-data.frame(X)
+img1 <- ggplot(df,aes(Sepal.Length,Petal.Length))+
+  geom_point()+
+  geom_point(data = cmeans %>% t %>%  as.data.frame(),aes(Sepal.Length,Petal.Length),col="red",size=4) +
+  geom_abline(intercept=intercept[1],slope=slope[1],linetype="dashed")+
+  geom_abline(intercept=intercept[2],slope=slope[2],linetype="dashed")+
+  theme_classic(base_size=16) + coord_fixed()
+
+
+img2 <- (pca$scores) %>% as.data.frame() %>% ggplot(aes(Comp.1,-1*Comp.2)) + geom_point()+ theme_classic(base_size=16) + geom_vline(xintercept = 0,linetype="dashed")+ geom_hline(yintercept = 0,linetype="dashed")
+
+design <- "AB"
+wrap_plots(A=img1,B=img2, design = design,tag_level="new")+  plot_annotation(tag_levels = "A")
+```
+
+- Les axes de l'ACP sont projetés sur les dimensions d'origine et passent par la moyenne (rouge).
+- Projection des points dans l'espace de l'ACP.
+
 
 ### PCA with Seurat
 

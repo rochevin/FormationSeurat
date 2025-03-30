@@ -35,7 +35,8 @@ execute:
 
 :::: {.columns}
 ::: {.column width="50%"}
-- Are there distinct subpopulations of cells? - For each cell type, what are the marker genes? 
+- Are there distinct subpopulations of cells? 
+- For each cell type, what are the marker genes? 
 - How visualize the cells? 
 - Are there continuums of differentiation / activation cell states? 
 - ...
@@ -127,6 +128,7 @@ You can follow the news in the "Updates" section of scRNA-tools.
 -   Expliquer que chaque pipeline a son type d'Objet
     -   Seurat en R $\longrightarrow$ Seurat Object
     -   Scanpy en python $\longrightarrow$ AnnData class
+    -   SingleCellExperiment 
 -   Dans la suite on va travailler avec Seurat
 -   création de l'objet Seurat (SO) pour démarrer schéma évolutif de ce que l'on a rempli dans l'object
 
@@ -237,6 +239,7 @@ plot1 + plot2
 Filtrage préliminaire des cellules à l'aide de ces indicateurs
 
 ```{r}
+dim(pbmc)
 pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
 dim(pbmc)
 ```
@@ -250,6 +253,7 @@ dim(pbmc)
   + to be able to compare cells
   
 ![](images/motivNormalisation.png)
+
 Images from https://www.biostars.org/p/349881/
 
 The 2 libraries have the same RNA composition.
@@ -357,14 +361,21 @@ By default, only variable features are scaled.
 You can specify the features argument to scale additional features
 
 ```{r}
-pbmc<-ScaleData(pbmc)
+# Dans vignette 
+  #all.genes <- rownames(pbmc)
+  #pbmc <- ScaleData(pbmc, features = all.genes)
+  # on garde les 13714 genes dans pbmc@assays$RNA$scale.data
+
+pbmc<-ScaleData(pbmc,)
 Layers(pbmc[["RNA"]])
+dim(pbmc@assays$RNA$scale.data) # on a plus que 2000 genes d'où des soucis (warnings) dans la suite mais c'est plus rapide pour la formation ????
 pbmc[["RNA"]]$scale.data[10:20,1:10]
 ```
 
 ### Several methods
 
 Several methods are available:
+
 - PCA, 
 - t-SNE, 
 - UMAP, 
@@ -379,7 +390,7 @@ Comparaison des rendus avec [Sleepwalk](https://anders-biostat.github.io/sleepwa
 
 
 ### Principle of PCA
--   explication du principe de la PCA
+-   explication du principe de la PCA : changement de repère cherchant à maximiser l'inertie axiale (inertie des projetés)
 
 ```{r}
 #| fig.width: 8
@@ -413,6 +424,11 @@ wrap_plots(A=img1,B=img2, design = design,tag_level="new")+  plot_annotation(tag
 
 - Les axes de l'ACP sont projetés sur les dimensions d'origine et passent par la moyenne (rouge).
 - Projection des points dans l'espace de l'ACP.
+
+![](images/ACP-Fenelon.png)
+![](images/repereACP.png)
+
++ exemple dans cours de 3MIC
 
 
 ### PCA with Seurat
@@ -459,12 +475,20 @@ DimHeatmap(pbmc, dims = 1:2, cells = 500, balanced = TRUE)
 ElbowPlot(pbmc)
 ```
 
+Mais probleme de l'ACP sur les données scRNAseq
+
+- C'est une méthode de réduction de dimension linéaire
+- Elle est sensible à la sparsité des données scRNAseq 
+- C'est donc utilisé pour réduire le jeu de données pour la suite de l'étude. 
+
+
 ### t-SNE
 
 t-Distributed stochastic neighbor embedding is a state-of-the-art dimensionality reduction algorithm for non-linear data representation that produces a low-dimensional distribution of high-dimensional data (Maaten and Hinton, 2008; Van Der Maaten, 2014). It excels at revealing local structure in high-dimensional data. t-SNE is based on the SNE (Hinton and Roweis, 2002), which starts from converting the high-dimensional Euclidean distances between data points into conditional probabilities that represent similarities. The main idea and the modifications of t-SNE are (1) the symmetric version of SNE and (2) using a Student’s t distribution to compute the similarity between two points in the low-dimensional space.
 
 ![](images/schemetSNE.png)
 
+Dans Seurat, en raison de la dimension des données, part avec les données de l'ACP (reduction="pca" par défaut). Détermination des voisins par KNN puis t-SNE avec la fonction RunTSNE
 
 ```{r}
 #| message: false
@@ -586,6 +610,7 @@ Idents(pbmc)<-pbmc@meta.data$Clusters_0.5
 table(Idents(pbmc))
 EffPlot(pbmc,resolution=0.5)
 pbmc$seurat_clusters<-pbmc@meta.data$Clusters_0.5
+DimPlot(pbmc,reduction = "umap")
 ```
 
 
@@ -690,6 +715,7 @@ SelectGene<-GeneMkCl3_merge%>%
     filter(myAUC>0.9)%>%
     filter(avg_log2FC>2)%>%
     arrange(desc(myAUC))
+head(SelectGene)
 ```
 
 ```{r}
@@ -703,6 +729,10 @@ FeaturePlot(pbmc, features = SelectGene$gene[1:3])
 
 ```{r}
 DotPlot(pbmc,features = SelectGene$gene[1:3])
+```
+
+```{r}
+RidgePlot(pbmc,features = SelectGene$gene[1:3])
 ```
 
 
@@ -725,10 +755,20 @@ head(GeneMkWilcox)
 GeneMkAUC<-readRDS("data/GeneMkAUC.rds")
 GeneMkAUC$gene<-rownames(GeneMkAUC)
 head(GeneMkAUC)
+```
 
+
+```{r}
 ## PB de merge car gene et cluster ! A revoir
-GeneMk_merge<-merge(GeneMkAUC,GeneMkWilcox[,c(1,5,6,7)],by="gene")
-head(GeneMk_merge)
+## il faut merger les genes pour chaque cluster fixé
+    ##GeneMk_merge<-merge(GeneMkAUC,GeneMkWilcox[,c(1,5,6,7)],by="gene")
+    ##head(GeneMk_merge)
+GeneMk_merge<-GeneMkWilcox%>%
+              select(c("p_val","p_val_adj","cluster","gene"))%>%
+              left_join(GeneMkAUC,by=c("gene","cluster"))
+GeneMk_merge<-GeneMk_merge[,c(4,3,1:2,5:10)]%>%
+              arrange(cluster,desc(myAUC))
+GeneMk_merge[65:75,]  ## pourquoi ce n'est pas dans GeneMkAUC ???   
 ```
 
 
@@ -743,11 +783,153 @@ DoHeatmap(pbmc, features = top10$gene) + NoLegend()
 ```
 
 
-### 1 groupe contre un autre
+### un groupe contre un autre
 
-- expliquer que l'o peut faire la même chose mais en précisant une classe contre une autre, un groupe de classes contre un autre groupe de classes
+- expliquer que l'on peut faire la même chose mais en précisant une classe contre une autre, un groupe de classes contre un autre groupe de classes
 - fonction FindMarkers
 - le faire sur l'exemple
 
+```{r}
+GeneMkCl3vsCl5<-FindMarkers(pbmc,test.use="roc",ident.1=3,ident.2=5,logfc.threshold=0.1)
+ggplot(GeneMkCl3vsCl5,aes(x=myAUC))+geom_density()
+quantile(GeneMkCl3vsCl5$myAUC,seq(0.9,1,0.01))
+SelectCl3vsCl5<-GeneMkCl3vsCl5%>%
+  filter(myAUC>0.7)%>%
+  arrange(desc(avg_log2FC))
+dim(SelectCl3vsCl5)
+```
 
+```{r}
+DoHeatmap(pbmc[,which(pbmc$Clusters_0.5 %in% c(3,5))], features = rownames(SelectCl3vsCl5),assay = "RNA",slot = "data") + NoLegend()
+```
+
+```{r}
+FeaturePlot(pbmc, features = rownames(SelectCl3vsCl5)[1:3])
+```
+
+```{r}
+DotPlot(pbmc,features = rownames(SelectCl3vsCl5)[1:10])+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r}
+RidgePlot(pbmc,features = rownames(SelectCl3vsCl5)[1])
+```
+
+# Pipeline d'analyse pour deux (plusieurs) conditions biologiques
+
+### Context
+
+
+### REM
+
+A réfléchir : 
+
+- Si on a deux fichiers de données diff --> 2 objets Seurat normalisés séparément puis intégration
+- Dans l'exemple ifnb c'est sous forme de layers (Seurat V5)
+
+
+
+### Example
+
+The object contains data from human PBMC from two conditions, interferon-stimulated and control cells (stored in the stim column in the object metadata). We will aim to integrate the two conditions together, so that we can jointly identify cell subpopulations across datasets, and then explore how each group differs across conditions
+
+In previous versions of Seurat, we would require the data to be represented as two different Seurat objects. In Seurat v5, we keep all the data in one object, but simply split it into multiple ‘layers’. To learn more about layers, check out our Seurat object interaction vignette.
+
+
+```{r}
+# devtools::install_github('satijalab/seurat-data')
+library(SeuratData)
+InstallData("ifnb")
+ifnb <- LoadData("ifnb")
+```
+
+```{r}
+Assays(ifnb)
+Layers(ifnb) # difference entre count et data ??
+
+dim(ifnb)    # 14053 13999
+table(ifnb$orig.ident)
+table(ifnb$stim)
+```
+
+On splitte selon les deux conditions (counts.CTRL et counts.STIM)
+
+```{r}
+ifnb[["RNA"]] <- split(ifnb[["RNA"]], f = ifnb$stim)
+ifnb
+
+dim(ifnb[["RNA"]]$counts.CTRL)
+dim(ifnb[["RNA"]]$counts.STIM)
+```
+
+### Normalization
+
+- Fait la normalisation comme vu précédemment pour chaque matrice de counts 
+(counts.CTRL --> data.CTRL et counts.STIM--> data.STIM)
+
+
+```{r}
+ifnb <- NormalizeData(ifnb)
+
+ifnb@assays$RNA$data.CTRL[1:10,1:10]
+ifnb@assays$RNA$data.STIM[1:10,1:10]
+```
+
+### HVG 
+
+- HVG 
+  + ?: il le fait pour chaque condition ? --> A priori oui car on a l'affichage par condition dans la console lors de l'execusion
+  + ? comment on récupère le plot par condition ? )
+  
+```{r}
+ifnb <- FindVariableFeatures(ifnb)
+
+top10<-head(VariableFeatures(ifnb), 10)
+plot1<-VariableFeaturePlot(ifnb)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+```
+
+### Dimension reduction sans integration
+
+- En fait ça fait la réduction de dimension de toutes les données ensembles sans intégration ??
+
+```{r}
+ifnb <- ScaleData(ifnb)
+ifnb <- RunPCA(ifnb)
+ifnb <- FindNeighbors(ifnb, dims = 1:30, reduction = "pca")
+ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
+DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
+```
+
+
+### Integration
+
+>We now aim to integrate data from the two conditions, so that cells from the same cell type/subpopulation will cluster together.
+
+>We often refer to this procedure as intergration/alignment. When aligning two genome sequences together, identification of shared/homologous regions can help to interpret differences between the sequences as well. Similarly for scRNA-seq integration, our goal is not to remove biological differences across conditions, but to learn shared cell types/states in an initial step - specifically because that will enable us to compare control stimulated and control profiles for these individual cell types.
+
+>The Seurat v5 integration procedure aims to return a single dimensional reduction that captures the shared sources of variance across multiple layers, so that cells in a similar biological state will cluster. The method returns a dimensional reduction (i.e. integrated.cca) which can be used for visualization and unsupervised clustering analysis. For evaluating performance, we can use cell type labels that are pre-loaded in the seurat_annotations metadata column.
+
+- Seurat function: IntegrateLayers() 
+- Five integration methods :
+
+  + Anchor-based CCA integration (method=CCAIntegration)
+  + Anchor-based RPCA integration (method=RPCAIntegration)
+  + Harmony (method=HarmonyIntegration)
+  + FastMNN (method= FastMNNIntegration)
+  + scVI (method=scVIIntegration) --> Ne semble plus être dispo
+  
+### Example
+
+```{r,eval=F}
+obj <- IntegrateLayers(
+  object = ifnb, 
+  method = CCAIntegration,
+  orig.reduction = "pca", 
+  new.reduction = "integrated.cca",
+  verbose = FALSE
+)
+obj <- FindNeighbors(obj, reduction = "integrated.cca", dims = 1:30)
+```
 

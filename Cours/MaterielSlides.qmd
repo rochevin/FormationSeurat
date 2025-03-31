@@ -915,16 +915,23 @@ DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
 - Five integration methods :
 
   + Anchor-based CCA integration (method=CCAIntegration)
+  CCA = Canonical Correlation Analysis
 
+![](images/CCA-Seurat.png)
 Explication: https://xinmingtu.cn/blog/2022/CCA_dual_PCA/
+
 
   + Anchor-based RPCA integration (method=RPCAIntegration)
   + Harmony (method=HarmonyIntegration)
+  
+![](images/HarmonyIntegration.png)  
+  
   + FastMNN (method= FastMNNIntegration)
   + scVI (method=scVIIntegration) --> Ne semble plus être dispo
   
 
-https://www.biorxiv.org/content/10.1101/2024.12.16.628691v1.full.pdf  
+https://www.biorxiv.org/content/10.1101/2024.12.16.628691v1.full.pdf 
+https://divingintogeneticsandgenomics.com/post/cca-alignment/
   
 ### Example
 

@@ -1104,6 +1104,33 @@ Utilisation de DESeq2 :
 ```
 
 
+# Pour aller plus loin
+
+## Spatial transcriptomic (ST)
+
+### ST Data
+
+![](images/SpatialTransc.png)
+
+### Pipeline
+
+- Normalization
+- Dimension reduction
+- **Clustering** : take into account spatial information
+- Marker genes 
+- ....
+- Detecting spatially-variable features
+
+
+### Clustering 
+
+
+### Example
+
+```{r}
+InstallData("stxBrain")
+brain <- LoadData("stxBrain", type = "anterior1")
+```
 
 
 

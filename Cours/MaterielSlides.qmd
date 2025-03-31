@@ -1035,27 +1035,75 @@ DotPlot(ifnb, features = markers.to.plot, cols = c("blue", "red"), dot.scale = 8
 
 ### Identify differential expressed genes across conditions
 
-Pseudo-bulk
+#### Si pas de replicat
+
+
+
+
+#### Pseudo-bulk
+
+D'abord ajout d'informations pour avoir des "replicats"
+
+```{r}
+# load the inferred sample IDs of each cell
+ctrl <- read.table(url("https://raw.githubusercontent.com/yelabucsf/demuxlet_paper_code/master/fig3/ye1.ctrl.8.10.sm.best"), head = T, stringsAsFactors = F)
+stim <- read.table(url("https://raw.githubusercontent.com/yelabucsf/demuxlet_paper_code/master/fig3/ye2.stim.8.10.sm.best"), head = T, stringsAsFactors = F)
+info <- rbind(ctrl, stim)
+
+# rename the cell IDs by substituting the '-' into '.'
+info$BARCODE <- gsub(pattern = "\\-", replacement = "\\.", info$BARCODE)
+
+# only keep the cells with high-confidence sample ID
+info <- info[grep(pattern = "SNG", x = info$BEST), ]
+
+# remove cells with duplicated IDs in both ctrl and stim groups
+info <- info[!duplicated(info$BARCODE) & !duplicated(info$BARCODE, fromLast = T), ]
+
+# now add the sample IDs to ifnb 
+rownames(info) <- info$BARCODE
+info <- info[, c("BEST"), drop = F]
+names(info) <- c("donor_id")
+ifnb <- AddMetaData(ifnb, metadata = info)
+
+# remove cells without donor IDs
+ifnb$donor_id[is.na(ifnb$donor_id)] <- "unknown"
+ifnb <- subset(ifnb, subset = donor_id != "unknown")
+```
+
+
+Ici regroupement par condition (CTRL/STIM) et par types cellulaires (sens??) et donaor ids 
 
 ```{r}
 # pseudobulk
-aggregate_ifnb <- AggregateExpression(ifnb, 
-                    group.by = c("seurat_annotations", "stim"),
-                    return.seurat = TRUE)
+pseudo_ifnb <- AggregateExpression(ifnb, 
+                                   assays = "RNA", 
+                                   return.seurat = T, 
+              group.by = c("stim", "donor_id", "seurat_annotations"))
+
+head(pseudo_ifnb)
+class(pseudo_ifnb)
+pseudo_ifnb@assays$RNA$counts[1:10,]
 ```
 
 
 ```{r}
-ifnb$celltype.stim <- paste(ifnb$seurat_annotations, 
-                            ifnb$stim, sep = "_")
-
-Idents(ifnb) <- "celltype.stim"
-b.interferon.response <- FindMarkers(ifnb, 
-                                     ident.1 = "B_STIM", 
-                                     ident.2 = "B_CTRL", 
-                                     verbose = FALSE)
-head(b.interferon.response, n = 15)
+pseudo_ifnb$celltype.stim <- paste(pseudo_ifnb$seurat_annotations, pseudo_ifnb$stim, sep = "_")
+table(pseudo_ifnb$celltype.stim)
+Idents(pseudo_ifnb) <- "celltype.stim"
+table(Idents(pseudo_ifnb))
 ```
+
+Utilisation de DESeq2 : 
+
+```{r}
+#bulk.mono.de <- FindMarkers(object = pseudo_ifnb, 
+#                         ident.1 = "CD14 Mono_STIM", 
+#                         ident.2 = "CD14 Mono_CTRL",
+#                         test.use = "DESeq2")
+#head(bulk.mono.de, n = 10)
+```
+
+
 
 
 

@@ -14,7 +14,13 @@ execute:
 
 # Introduction
 
-### Packages
+## Pour suivre la formation
+
+### Installation sur votre ordinateur
+
+Mettre ici les infos pour la mise en place .....
+
+### Packages nécessaires
 
 ```{r}
 library(Seurat)
@@ -28,23 +34,48 @@ library(reshape2)
 library(ggplot2)
 ```
 
+### Objectifs de la formation
+
+A FAIRE
+
+
+## Qu'est-ce-que les données de single-cell RNA-seq ? 
 
 ### bulk RNA-seq vs single-cell RNAseq
 
+- Principe du bulk RNA-seq
+
 ![bulkRNAseq](images/BulkRNA.png)
+- Principe du single-cell RNA-seq (scRNAseq)
 
 ![scRNAseq](images/singlecell.png)
 
-![bulk vs scRNAseq](images/scRNAseq.png)
+<!--![bulk vs scRNAseq](images/scRNAseq.png)-->
 
-### scRNAseq data
 
-- $C$ cells, $G$ genes:  $C\leq G$ or $C \approx G$ $\Longrightarrow$ high dimensionality
-- Measures: $y_{cg}\in\mathbb{N}$  = count expression measure of gene $g$ in cell $c$
-- Technical and biological noise
-- High variability
-- Zero-inflated data $\Longrightarrow$ "sparsity" 
-($\geq 80\%$ of zeros per raw, dropouts). 
+## De la manip à la fin de la bio-informatique 
+
+### Différentes technologies
+
+???????
+
+
+### Alignement - filtrage 
+
+- Après la manip, passage par la bioinformatique
+- Alignement des séquences, analyse des cellules que l'on peut retenir, ....
+
+### Avec CellRanger
+
+![](images/10XGenomics.png)
+![](images/CellRanger-1.png)
+![](images/CellRanger-Pos.png)
+
+### Après la bio-informatique
+
+- On récupère les données sous forme de fichiers ????? 
+
+## De la question bio à la question stat
 
 ### Biological questions
 
@@ -78,6 +109,8 @@ library(ggplot2)
 (\tiny Rostom et al, FEBS 2017)
 :::
 :::
+
+## Les packages pour analyser les données de scRNAseq
 
 ### Number of available tools for scRNAseq data
 :::: {.columns}
@@ -127,55 +160,18 @@ You can follow the news in the "Updates" section of scRNA-tools.
 :::
 :::
 
-
-# Preparation des données
-
-## Alignement - filtrage CellRanger
-
-### CellRanger
-
-![](images/10XGenomics.png)
-![](images/CellRanger-1.png)
-![](images/CellRanger-Pos.png)
-
-## Seurat / scanpy / ...
+### Attention au type d'objet
 
 -   Expliquer que chaque pipeline a son type d'Objet
     -   Seurat en R $\longrightarrow$ Seurat Object
     -   Scanpy en python $\longrightarrow$ AnnData class
     -   SingleCellExperiment 
--   Dans la suite on va travailler avec Seurat
--   création de l'objet Seurat (SO) pour démarrer schéma évolutif de ce que l'on a rempli dans l'object
+- Il existe des fonctions qui permettent de passer de l'un à l'autre
 
+- Dans la suite on va travailler avec Seurat
 
-
-
-### Seurat object
-
-#### Example
-
-```{r init}
-#| message: false
-#| warning: false
-
-
-# Load the PBMC dataset
-pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
-
-# Initialize the Seurat object with the raw (non-normalized data).
-pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
-pbmc
-```
-
-On peut montrer le contenu stocké vis-à-vis d'un schéma sur la structure de SO
-
-```{r}
-class(pbmc)
-dim(pbmc)
-
-pbmc@assays$RNA$counts[10:20,1:15]
-Assays(pbmc)
-```
+A VOIR COMMENT ON ARTICULE AVEC AnnData juste après. 
+Peut-etre le mettre dans pour aller plus loin quand on veut basculer dans scanpy et/ou quand on doit passer par sce.  
 
 ### AnnData
 
@@ -200,6 +196,59 @@ Assays(pbmc)
 * `obsm`/`varm` : Métriques ou des données dérivées supplémentaires liées aux observations / variables (Résultat ACP)
 * `uns`: Données non structurées (paramètres de l'analyse, autres métadonnées, ...)
 * `obsp`/`varp`: Relations par paires entre les cellules
+
+
+
+
+
+## Exemple pour la suite
+
+### Présentation des données
+
+### Création de l'objet Seurat
+
+```{r init}
+#| message: false
+#| warning: false
+
+# Load the PBMC dataset
+pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
+
+# Initialize the Seurat object with the raw (non-normalized data).
+pbmc <- CreateSeuratObject(counts = pbmc.data, 
+                           project = "pbmc3k", 
+                           min.cells = 3, 
+                           min.features = 200)
+class(pbmc)
+pbmc
+```
+
+### Contenu du SO
+
+- $C$= `r ncol(pbm)` cellules décrites par `$G=$ `r nrow(pbmc)`gènes
+- Les comptages bruts sont dans `pbmc@assays$RNA$counts`
+
+```{r}
+
+dim(pbmc)
+pbmc@assays$RNA$counts[10:20,1:15]
+Assays(pbmc)
+```
+
+FAIRE UN SCHEMA EVOLUTIF DU CONTENU DE SO
+
+
+### Spécificités des données scRNAseq
+
+- $C$ cellules décrites par  $G$ gènes:  $C\leq G$ or $C \approx G$ $\Longrightarrow$ grande dimension
+- Mesures: $y_{cg}\in\mathbb{N}$  = count expression measure of gene $g$ in cell $c$. Ce sont des comptages
+- Technical and biological noise
+- High variability
+- Zero-inflated data $\Longrightarrow$ "sparsity" 
+($\geq 80\%$ of zeros per raw, dropouts). 
+
+
+
 
 
 

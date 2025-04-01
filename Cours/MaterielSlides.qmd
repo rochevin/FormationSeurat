@@ -207,6 +207,11 @@ Peut-etre le mettre dans pour aller plus loin quand on veut basculer dans scanpy
 
 ### Présentation des données
 
+> For this tutorial, we will be analyzing the a dataset of Peripheral Blood Mononuclear Cells (PBMC) freely available from 10X Genomics. There are 2,700 single cells that were sequenced on the Illumina NextSeq 500. The raw data can be found here.
+
+> We start by reading in the data. The Read10X() function reads in the output of the cellranger pipeline from 10X, returning a unique molecular identified (UMI) count matrix. The values in this matrix represent the number of molecules for each feature (i.e. gene; row) that are detected in each cell (column). Note that more recent versions of cellranger now also output using the h5 file format, which can be read in using the Read10X_h5() function in Seurat.
+
+
 ### Création de l'objet Seurat
 
 ```{r init}
@@ -227,11 +232,10 @@ pbmc
 
 ### Contenu du SO
 
-- $C$= `r ncol(pbm)` cellules décrites par `$G=$ `r nrow(pbmc)`gènes
+- $C$= `r ncol(pbmc)` cellules décrites par `$G=$ `r nrow(pbmc)`gènes
 - Les comptages bruts sont dans `pbmc@assays$RNA$counts`
 
 ```{r}
-
 dim(pbmc)
 pbmc@assays$RNA$counts[10:20,1:15]
 Assays(pbmc)

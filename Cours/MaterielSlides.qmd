@@ -71,6 +71,11 @@ A FAIRE
 ![](images/CellRanger-1.png)
 ![](images/CellRanger-Pos.png)
 
+https://www.10xgenomics.com/support/software/cell-ranger/latest/algorithms-overview/cr-gex-algorithm
+
+![](images/CellRanger-3.png)
+![](images/CellRanger-2.png)
+
 ### Après la bio-informatique
 
 - On récupère les données sous forme de fichiers ????? 
@@ -232,7 +237,7 @@ pbmc@assays$RNA$counts[10:20,1:15]
 Assays(pbmc)
 ```
 
-**FAIRE UN SCHEMA EVOLUTIF DU CONTENU DE SO**
+![](images/SO-1.png)
 
 
 ### Spécificités des données scRNAseq
@@ -258,6 +263,9 @@ Assays(pbmc)
  
   + nCount_RNA: number of UMIs per cell
   + nFeature_RNA: number of genes detected per cell
+
+![](images/SO-2.png)
+
 
 ```{r}
 head(pbmc@meta.data)
@@ -299,6 +307,9 @@ plot2 <- FeatureScatter(pbmc,
 plot1 + plot2
 ```
 
+![](images/SO-3.png)
+
+
 ### Filtrage des cellules 
 
 - A l'aide de ces indicateurs, filtrage préliminaire des cellules 
@@ -325,8 +336,8 @@ On ne conserve que $C=$ `r ncol(pbmc)` cellules pour la suite de l'étude.
 
 Images from https://www.biostars.org/p/349881/
 
-The 2 libraries have the same RNA composition.
-But the condition B has 3 times more reads than
+> The 2 libraries have the same RNA composition.
+> But the condition B has 3 times more reads than
 the condition A.
 We need to correct for differences in library size.
 

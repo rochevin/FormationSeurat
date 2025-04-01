@@ -198,9 +198,6 @@ Peut-etre le mettre dans pour aller plus loin quand on veut basculer dans scanpy
 * `obsp`/`varp`: Relations par paires entre les cellules
 
 
-
-
-
 ## Exemple pour la suite
 
 ### Présentation des données
@@ -235,7 +232,7 @@ pbmc@assays$RNA$counts[10:20,1:15]
 Assays(pbmc)
 ```
 
-FAIRE UN SCHEMA EVOLUTIF DU CONTENU DE SO
+**FAIRE UN SCHEMA EVOLUTIF DU CONTENU DE SO**
 
 
 ### Spécificités des données scRNAseq
@@ -248,39 +245,42 @@ FAIRE UN SCHEMA EVOLUTIF DU CONTENU DE SO
 ($\geq 80\%$ of zeros per raw, dropouts). 
 
 
-
-
-
-
 # Pipeline d'analyse d'une condition biologique
 
-## Normalisation et contrôle qualité
+## Contrôle qualité et normalisation
 
-### QC metrics
+### QC metrics : `nCount_RNA` et `nFeature_RNA`
 
-- Il y a déjà par défaut à la création de l'objet **SO**, le calcul de nCount_RNA et nFeature_RNA disponible dans meta.data
+- A la création de l'objet **SO**, calcul de `nCount_RNA` et `nFeature_RNA`, disponibles dans `meta.data`
 
-  + orig.ident: this often contains the sample identity if known,        but will default to project as we had assigned it
+ <!-- + orig.ident: this often contains the sample identity if known,        but will default to project as we had assigned it
+ -->
+ 
   + nCount_RNA: number of UMIs per cell
   + nFeature_RNA: number of genes detected per cell
 
 ```{r}
-pbmc@meta.data[1:10,]
+head(pbmc@meta.data)
 VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA"), ncol = 2)
 ```
 
+**Mettre le schema evolué avec meta.data**
+
+### QC metrics
+
 - Calculate some additional metrics for plotting:
 
-  + number of genes detected per UMI: this metric with give us an idea of the complexity of our dataset (more genes detected per UMI, more complex our data)
+  + number of genes detected per UMI: 
+this metric with give us an idea of the complexity of our dataset (more genes detected per UMI, more complex our data)
   
 ```{r}
-pbmc$log10GenesPerUMI <- log10(pbmc$nFeature_RNA) / log10(pbmc$nCount_RNA)
-VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA","log10GenesPerUMI"), ncol = 3)
+pbmc$log10GenesPerUMI <- log10(pbmc$nFeature_RNA) /   log10(pbmc$nCount_RNA)
+VlnPlot(pbmc, features = c("log10GenesPerUMI"))
 ```
   
   
   + mitochondrial ratio: this metric will give us a percentage of cell reads originating from the mitochondrial genes
-The number of genes per UMI for each cell is quite easy to calculate, and we will log10 transform the result for better comparison between samples. function PercentageFeatureSet() 
+The number of genes per UMI for each cell is quite easy to calculate, and we will log10 transform the result for better comparison between samples. function `PercentageFeatureSet()` 
 
 ```{r}
 pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, 
@@ -290,21 +290,29 @@ VlnPlot(pbmc, features = c("percent.mt"))
 ```
 
 ```{r}
-plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
-plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1 <- FeatureScatter(pbmc, 
+                        feature1 = "nCount_RNA", 
+                        feature2 = "percent.mt")
+plot2 <- FeatureScatter(pbmc, 
+                        feature1 = "nCount_RNA", 
+                        feature2 = "nFeature_RNA")
 plot1 + plot2
 ```
 
-### Selecting cells
+### Filtrage des cellules 
 
-Filtrage préliminaire des cellules à l'aide de ces indicateurs
+- A l'aide de ces indicateurs, filtrage préliminaire des cellules 
 
 ```{r}
 dim(pbmc)
-pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+pbmc <- subset(pbmc, 
+               subset = nFeature_RNA > 200 & 
+                        nFeature_RNA < 2500 & 
+                        percent.mt < 5)
 dim(pbmc)
 ```
 
+On ne conserve que $C=$ `r ncol(pbmc)` cellules pour la suite de l'étude. 
 
 ### Normalisation
 

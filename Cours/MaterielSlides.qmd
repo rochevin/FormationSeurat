@@ -252,7 +252,7 @@ Assays(pbmc)
 
 # Pipeline d'analyse d'une condition biologique
 
-## Contrôle qualité et normalisation
+## Contrôle qualité
 
 ### QC metrics : `nCount_RNA` et `nFeature_RNA`
 
@@ -325,9 +325,10 @@ dim(pbmc)
 
 On ne conserve que $C=$ `r ncol(pbmc)` cellules pour la suite de l'étude. 
 
-### Normalisation
 
-#### Why do we need to normalize the data ?
+## Normalisation
+
+### Why do we need to normalize the data ?
 
 - We need to remove technical biases in order to 
   + to be able to compare cells
@@ -345,7 +346,7 @@ We need to correct for differences in library size.
   
 - Take into account the sparsity of the count matrix  
 
-#### Solutions
+### Normalization in Seurat
 
 - Many possible strategies for normalized data
 - In Seurat, function `NormalizeData(object,normalization.method= ...,)`
@@ -366,19 +367,37 @@ We need to correct for differences in library size.
 The use of SCTransform replaces the need to run NormalizeData, FindVariableFeatures, or ScaleData (described below.)
 In Seurat v5, SCT v2 is applied by default. You can revert to v1 by setting vst.flavor = 'v1'
 
-  
+<!--
+Article: Comparison and evaluation of statistical
+error models for scRNA-seq.
+Saket Choudhary and Rahul Satija
+-->
+
+### Example
+
 ```{r}
  pbmc <- NormalizeData(pbmc, 
-                       normalization.method = "LogNormalize",      scale.factor = 10000)
-pbmc@assays$RNA$data[10:20,1:10]
+                       normalization.method = "LogNormalize", 
+                       scale.factor = 10000)
+pbmc@assays$RNA$data[10:20,1:5]
 # pbmc[["RNA"]]$data[10:20,1:10]
 # dim(pbmc[["RNA"]]$data)
-
-
-# pbmc2<-SCTransform(pbmc) ?????? Ne pas développer SCTransform 
 ```
   
-### HVG
+```{r,echo=F}
+aux<-data.frame(brut=apply(pbmc@assays$RNA$counts,2,sum),
+                norm=apply(pbmc@assays$RNA$data,2,sum))
+ggplot(melt(aux),aes(x=variable,y=value))+
+  geom_boxplot()
+rm(aux)
+```
+  
+![](images/SO-4.png)  
+  
+  
+### Identification des gènes HVG
+
+- HVG = High Variable Gene (feature)
 
 - Identification of highly variable features
 - Exhibit high cell-to-cell variation in the dataset 
@@ -394,11 +413,10 @@ In each dataset, we next aimed to identify a subset of features (e.g., genes) ex
 
 > where $z_{i,j}$ is the standardized value of feature $i$ in cell $j$, $x_{i,j}$ is the raw value of feature $i$ in cell $j$, $\bar{x}_i$ is the mean raw value for feature $i$, and $\sigma_i$ is the expected standard deviation of feature $i$ derived from the global mean-variance fit. To reduce the impact of technical outliers, we clipped the standardized values to a maximum value of $\sqrt{N}$, where $N$ is the total number of cells. For each gene, we then computed the variance of standardized values across all cells. This variance represents a measure of single-cell dispersion after controlling for mean expression, and we use it directly to rank the features. Unless otherwise noted, we selected the 2,000 genes with the highest standardized variance as “highly variable.” This procedure is implemented in the FindVariableFeatures function in Seurat v3 (selection.method = “vst”).
 
-
-
 Stuart et al. (Cell, 2019). Comprehensive Integration of Single-Cell Data 
 
-Dans la fonction FindVariableFeatures, option selection.method
+
+Dans la fonction `FindVariableFeatures(object,selection.method=...,)` : 
 
 - "vst": First, fits a line to the relationship of log(variance) and log(mean) using local polynomial regression (loess). Then standardizes the feature values using the observed mean and expected variance (given by the fitted line). Feature variance is then calculated on the standardized values after clipping to a maximum (see clip.max parameter).
 
@@ -407,12 +425,13 @@ Dans la fonction FindVariableFeatures, option selection.method
 - "dispersion" (disp): selects the genes with the highest dispersion values
 
 ```{r}
-pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
-
-# Identify the 10 most highly variable genes
+pbmc <- FindVariableFeatures(pbmc, 
+                             selection.method = "vst", 
+                             nfeatures = 2000)
+length(VariableFeatures(pbmc))
+# Identification du top 10 des HVG
 top10<-head(VariableFeatures(pbmc), 10)
 top10
-
 # plot variable features with and without labels
 plot1 <- VariableFeaturePlot(pbmc)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
@@ -431,6 +450,21 @@ plot2
 - \ldots \vspace*{0.3cm}
 - But beware of the interpretations after!\vspace*{0.3cm}
 
+### Several methods
+
+Several methods are available:
+
+- **PCA**, 
+- **t-SNE**, 
+- **UMAP**, 
+- ZIFA, 
+- ZINB-WaVe, 
+- SWNE, 
+- Diffusion MAP, 
+- pCMF, 
+- $\ldots$ 
+
+Comparaison des rendus avec [Sleepwalk](https://anders-biostat.github.io/sleepwalk/#)
 
 ### Scaling the data
 
@@ -443,33 +477,18 @@ This step gives equal weight in downstream analyses, so that highly-expressed ge
 By default, only variable features are scaled.
 You can specify the features argument to scale additional features
 
-```{r}
-# Dans vignette 
-  #all.genes <- rownames(pbmc)
-  #pbmc <- ScaleData(pbmc, features = all.genes)
-  # on garde les 13714 genes dans pbmc@assays$RNA$scale.data
+Dans Seurat, fonction `ScaleData()`
 
-pbmc<-ScaleData(pbmc,)
-Layers(pbmc[["RNA"]])
-dim(pbmc@assays$RNA$scale.data) # on a plus que 2000 genes d'où des soucis (warnings) dans la suite mais c'est plus rapide pour la formation ????
+```{r}
+pbmc<-ScaleData(pbmc) #features = Default is variable features J (=2000 par défaut)
+dim(pbmc@assays$RNA$scale.data) # on a plus que J=2000 gènes 
+#d'où des soucis (warnings) dans la suite mais c'est plus rapide pour la formation ????
 pbmc[["RNA"]]$scale.data[10:20,1:10]
 ```
 
-### Several methods
+![](images/SO-6.png)
 
-Several methods are available:
 
-- PCA, 
-- t-SNE, 
-- UMAP, 
-- ZIFA, 
-- ZINB-WaVe, 
-- SWNE, 
-- Diffusion MAP, 
-- pCMF, 
-- $\ldots$ 
-
-Comparaison des rendus avec [Sleepwalk](https://anders-biostat.github.io/sleepwalk/#)
 
 
 ### Principle of PCA

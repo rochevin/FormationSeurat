@@ -348,20 +348,23 @@ We need to correct for differences in library size.
 #### Solutions
 
 - Many possible strategies for normalized data
-- In Seurat:
+- In Seurat, function `NormalizeData(object,normalization.method= ...,)`
 
-  + "LogNormalize" : dans option normalization.method
-Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale.factor. This is then natural-log transformed using log1p
+  + "LogNormalize" : Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale.factor. This is then natural-log transformed using log1p
 
-  + "CLR": dans option normalization.method
-Applies a centered log ratio transformation
+  + "CLR" : Applies a centered log ratio transformation
+  
+  >clr_function <- function(x) {
+  >        return(log1p(x = x / (exp(x = sum(log1p(x = x[x > 0]), na.rm   >= TRUE) / length(x = x)))))}
+  >log1p(x) computes log(1+x) accurately also for |x| << 1.
 
-  + "RC" : dans option normalization.method
-Relative counts. Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale.factor. No log-transformation is applied. For counts per million (CPM) set scale.factor = 1e6
+  + "RC" (Relative counts): Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale.factor. 
+  No log-transformation is applied. 
+  For counts per million (CPM) set scale.factor = 1e6
 
   + "SCTransform" : il faut passer par une autre fonction `SCTransform()`
-  The use of SCTransform replaces the need to run NormalizeData, FindVariableFeatures, or ScaleData (described below.)
-
+The use of SCTransform replaces the need to run NormalizeData, FindVariableFeatures, or ScaleData (described below.)
+In Seurat v5, SCT v2 is applied by default. You can revert to v1 by setting vst.flavor = 'v1'
 
   
 ```{r}

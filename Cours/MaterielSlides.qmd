@@ -14,6 +14,21 @@ execute:
 
 # Introduction
 
+### Packages
+
+```{r}
+library(Seurat)
+library(patchwork)
+library(tidyverse)
+library(dplyr)
+library(corrplot)
+library(clustree)
+library(SeuratData)
+library(reshape2)
+library(ggplot2)
+```
+
+
 ### bulk RNA-seq vs single-cell RNAseq
 
 ![bulkRNAseq](images/BulkRNA.png)
@@ -142,10 +157,7 @@ You can follow the news in the "Updates" section of scRNA-tools.
 ```{r init}
 #| message: false
 #| warning: false
-library(dplyr)
-library(Seurat)
-library(patchwork)
-library(tidyverse)
+
 
 # Load the PBMC dataset
 pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
@@ -451,7 +463,6 @@ head(pbmc@reductions$pca@feature.loadings)
 - feature.loadings : correlations entre genes et composantes principales
 
 ```{r}
-library(corrplot)
 corrplot(pbmc[["pca"]]@feature.loadings[c("CST3", "TYROBP", "LST1", "AIF1", "FTL"),1:5],method="ellipse")
 ```
 
@@ -598,7 +609,7 @@ p2<-DimPlot(pbmc,reduction = "umap",group.by = "Clusters_0.4")
 p1+p2
 
 # clustree
-library(clustree)
+
 clusterplot<-clustree(pbmc, prefix = "Clusters_")
 clusterplot
 ```
@@ -839,7 +850,6 @@ In previous versions of Seurat, we would require the data to be represented as t
 
 ```{r}
 # devtools::install_github('satijalab/seurat-data')
-library(SeuratData)
 InstallData("ifnb")
 ifnb <- LoadData("ifnb")
 ```
@@ -982,8 +992,6 @@ DimPlot(ifnb, reduction = "umap", split.by = "stim")
 
 
 ```{r}
-library(reshape2)
-library(ggplot2)
 Aux<-melt(table(Idents(ifnb),ifnb$stim))
 colnames(Aux)<-c("Cluster","Condition","len")
 ggplot(data=Aux, aes(x=Cluster, y=len, fill=Condition)) +
@@ -1104,33 +1112,120 @@ Utilisation de DESeq2 :
 ```
 
 
+
 # Pour aller plus loin
 
 ## Spatial transcriptomic (ST)
 
 ### ST Data
 
+>In the Seurat object, the spot by gene expression matrix is similar to a typical “RNA” Assay but contains spot level, not single-cell level data. The image itself is stored in a new images slot in the Seurat object. The images slot also stores the information necessary to associate spots with their physical position on the tissue image.
+
+
 ![](images/SpatialTransc.png)
-
-### Pipeline
-
-- Normalization
-- Dimension reduction
-- **Clustering** : take into account spatial information
-- Marker genes 
-- ....
-- Detecting spatially-variable features
-
-
-### Clustering 
-
 
 ### Example
 
 ```{r}
 InstallData("stxBrain")
 brain <- LoadData("stxBrain", type = "anterior1")
+brain
 ```
+
+Contenu de l'objet : A COMPLETER
+
+```{r}
+brain@assays$Spatial$counts[1:6,1:10]
+brain@images$anterior1
+```
+
+```{r}
+SpatialFeaturePlot(brain, features = "nCount_Spatial") + theme(legend.position = "right")
+```
+
+
+### Pipeline
+
+- Normalization
+
+- Dimension reduction
+- **Clustering** : take into account spatial information
+- Marker genes 
+- ....
+- Detecting spatially-variable features
+
+### Example
+
+```{r}
+#Normalization
+brain <- SCTransform(brain, assay = "Spatial", verbose = FALSE)
+brain@assays$SCT
+```
+
+```{r}
+#Dimension reduction
+brain <- RunPCA(brain, assay = "SCT", verbose = FALSE)
+brain <- FindNeighbors(brain, reduction = "pca", dims = 1:30)
+brain <- RunUMAP(brain, reduction = "pca", dims = 1:30)
+```
+
+
+### Clustering 
+
+![](images/Xiongetal-bioRxiv2025.png)
+
+Probleme avec BayesSpace ??????
+
+```{r}
+#library(BayesSpace)
+#diet.seurat = Seurat::DietSeurat(brain,
+#                                   graphs = "SCT_nn",
+#                                   dimreducs = c("pca"))
+#sce_brain = as.SingleCellExperiment(diet.seurat, assay = "SCT") 
+#colData(sce_brain) = cbind(colData(sce_brain),brain@images$anterior1$centroids@coords) 
+#sce_brain = spatialPreprocess(sce_brain, 
+#                          platform = "Visium",
+#                          skip.PCA = T, 
+#                          log.normalize = log.normalize) 
+#sce_brain <- spatialCluster(sce_brain,
+#                          nrep = 1000,
+#                          q= 8,
+#                          burn.in = 10,
+#                          model = "t",
+#                          gamma = 2)
+#brain@meta.data[["bayes.space"]] <- as.factor(sce_brain$spatial.cluster)
+```
+
+
+```{r}
+#InstallData("stxBrain")
+
+##Seurat workflow
+#brain = LoadData("stxBrain", type = "anterior1") #load seurat data
+#brain = Seurat::FindVariableFeatures(brain) #Simple Seurat workflow for PCs
+#brain <- SCTransform(brain, assay = "Spatial", verbose = FALSE)
+#brain = Seurat::ScaleData(brain)
+#brain = Seurat::RunPCA(brain)
+
+##Convert to SCE
+#diet.seurat = Seurat::DietSeurat(brain, graphs = "pca") #slim down #Seurat obj prior to conversion
+#sce_brain = as.SingleCellExperiment(diet.seurat) #convert seurat to SCE
+#colData(sce_brain) = cbind(colData(sce_brain), #brain@images$anterior1$centroids@coords) #add spatial info to SCE
+
+##BayesSpace Workflow
+#sce_brain = spatialPreprocess(sce_brain, platform = "Visium", skip.PCA = T, log.normalize = F) #add BayesSpace metadata, without messing with PCA/logcounts
+#sce_brain = spatialCluster(sce_brain, nrep = 1000, burn.in = 100, q = 10) #quickly cluster via BayesSpace
+#clusterPlot(sce_brain) #plot via BayesSpace
+
+##Add BayesSpace results to Seurat
+#brain@meta.data = cbind(brain@meta.data, BayesSpace = sce_brain$spatial.cluster) #add BayesSpace clusters to Seurat obj
+#SpatialDimPlot(brain, "BayesSpace") #plot via Seurat
+
+
+#https://www.ezstatconsulting.com/BayesSpace/articles/thrane_melanoma.html
+```
+
+
 
 
 

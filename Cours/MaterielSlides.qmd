@@ -32,6 +32,9 @@ library(clustree)
 library(SeuratData)
 library(reshape2)
 library(ggplot2)
+library(mvtnorm)
+library(FactoMineR)
+library(gridExtra)
 ```
 
 ### Objectifs de la formation
@@ -512,7 +515,68 @@ pbmc[["RNA"]]$scale.data[10:20,1:10]
 
 
 ### Principe de PCA
--   explication du principe de la PCA : changement de repère cherchant à maximiser l'inertie axiale (inertie des projetés)
+
+- PCA = Principal Component Analysis
+- Réduire l'espace tout en conservant "assez dinformation"
+- Méthode de réduction linéaire : Les composantes principales (méta-variables) sont des combinaisons linéaires des variables initiales (ici les gènes)
+- Correspond à la diagonalisation de la matrice de corrélation (si ACP centrée réduite)
+  + valeur propre $\lambda_s$ = inertie des individus projetés sur l'axe porté par un vecteur propre normé associé $v_s$ (axe principal)
+  + composante principale $C_s$ contient les coordonnées des projetés des individus sur l'axe engendré par $v_s$
+
+```{r}
+#| echo: FALSE
+#| fig-height: 4
+
+set.seed(1234)
+R<-matrix(c(1,1,-1,1),ncol=2)/sqrt(2)
+Sigma<-R%*%diag(c(4,0.5))%*%t(R)
+X<-as.data.frame(rmvnorm(50,mean=rep(0,2),sigma=Sigma))
+#ggplot(X,aes(x=V1,y=V2))+
+#  geom_point()+
+#  theme_minimal()+xlab("x")+ylab("y")+xlim(-4,4)+ylim(-5,5)
+```
+
+```{r}
+#| fig-height: 6
+proj<-function(X,a,b,xl,xmin=-4,xmax=4,ymin=-5,ymax=5){
+  v<-c(a,b)
+  v<-v/sqrt(sum(v^2))
+  
+  dfline=data.frame(xx=seq(-xl,xl,0.01),yy=(v[2]/v[1]*seq(-xl,xl,0.01)))
+  aux<-as.matrix(X)%*%as.matrix(v)
+  Y<-matrix(rep(v,each=nrow(X)),ncol=2)
+  for (i in 1:nrow(Y))
+    Y[i,]<-aux[i]*Y[i,]
+  dfproj=data.frame(xp=Y[,1],yp=Y[,2])
+  
+  line_df <- data.frame(
+  x = X[,1],
+  y = X[,2],
+  xend =Y[,1],
+  yend = Y[,2]
+  )
+
+  g<-ggplot(X,aes(x=V1,y=V2))+
+    geom_point()+
+    geom_line(data=dfline,aes(x=xx,y=yy))+
+    geom_point(data=dfproj,aes(x=xp,y=yp),col="red")+
+    geom_segment(
+    data = line_df, 
+    mapping = aes(x=x, y=y, xend=xend, yend=yend), 
+    inherit.aes = FALSE,linetype="dotted"
+  )+
+  xlab("")+ylab("")+xlim(xmin,xmax)+ylim(ymin,ymax)+
+  ggtitle(paste("Inertie axiale= ",round(sum(diag(var(Y))),2),sep=""))
+  return(g)
+}
+
+res<-PCA(X,scale.unit = F,graph=F)
+g1<-proj(X,a=res$var$coord[1,1],b=res$var$coord[2,1],xl=4)
+g2<-proj(X,a=cos(2*pi/3),b=sin(2*pi/3),xl=3)
+
+grid.arrange(g1,g2,ncol=2)
+```
+
 
 ```{r}
 #| fig.width: 8
@@ -551,47 +615,48 @@ wrap_plots(A=img1,B=img2, design = design,tag_level="new")+  plot_annotation(tag
 ![](images/ACP-Fenelon.png)
 ![](images/repereACP.png)
 
-+ exemple dans cours de 3MIC
-
-
 ### PCA with Seurat
 
--   scale + runPCA()
--   explication des sorties de Seurat
--   expliquer où c'est stocké dans l'objet
+-   L'ACP est faite sur les données centrées réduites à l'aide de la fonction `runPCA()`
 
 ```{r}
 #| message: false
 pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
-pbmc@reductions$pca
-str(pbmc@reductions$pca)
+  #str(pbmc@reductions$pca)
+```
+
+- On retrouve les coordonnées des projections des cellules sur les différents axes principaux (composantes principales)
+
+```{r}
 head(pbmc@reductions$pca@cell.embeddings)    #head(pbmc[["pca"]]@cell.embeddings)
 #head(Embeddings(pbmc@reductions$pca))
-head(pbmc@reductions$pca@feature.loadings)
 ```
 
-- cell.embedding : coordonnées des projections des cellules sur les différents axes princpaux
-- feature.loadings : correlations entre genes et composantes principales
-
-```{r}
-corrplot(pbmc[["pca"]]@feature.loadings[c("CST3", "TYROBP", "LST1", "AIF1", "FTL"),1:5],method="ellipse")
-```
-
-```{r}
-print(pbmc[["pca"]], dims = 1:3, nfeatures = 5)
-```
-
-```{r}
-VizDimLoadings(pbmc, dims = 1:2, reduction = "pca")
-```
+et visualisation de la projection des cellules dans le premier plan factoriel avec la fonction `DimPlot()` : 
 
 ```{r}
 DimPlot(pbmc, reduction = "pca") + NoLegend()
 ```
 
+- Les corrélations entre les gènes et les composantes principales
+
+```{r}
+head(pbmc@reductions$pca@feature.loadings)
+corrplot(pbmc[["pca"]]@feature.loadings[c("CST3", "TYROBP", "LST1", "AIF1", "FTL"),1:5],method="ellipse")
+```
+
+- Gènes les plus corrélés avec les composantes principales : 
+
+```{r}
+print(pbmc[["pca"]], dims = 1:3, nfeatures = 5)
+VizDimLoadings(pbmc, dims = 1:2, reduction = "pca",nfeatures=20)
+```
+
 ```{r}
 DimHeatmap(pbmc, dims = 1:2, cells = 500, balanced = TRUE)
 ```
+
+- Pour choisir le nombre de composantes principales à conserver :
 
 ```{r}
 ElbowPlot(pbmc)
@@ -601,24 +666,30 @@ Mais probleme de l'ACP sur les données scRNAseq
 
 - C'est une méthode de réduction de dimension linéaire
 - Elle est sensible à la sparsité des données scRNAseq 
-- C'est donc utilisé pour réduire le jeu de données pour la suite de l'étude. 
+- C'est utilisé pour réduire le jeu de données pour certaines méthodes dans la suite de l'étude
 
 
 ### t-SNE
+
+- Méthode de réduction de dimension non-linéaire 
+(Maaten and Hinton, 2008; Van Der Maaten, 2014)
+
+- 
+
 
 t-Distributed stochastic neighbor embedding is a state-of-the-art dimensionality reduction algorithm for non-linear data representation that produces a low-dimensional distribution of high-dimensional data (Maaten and Hinton, 2008; Van Der Maaten, 2014). It excels at revealing local structure in high-dimensional data. t-SNE is based on the SNE (Hinton and Roweis, 2002), which starts from converting the high-dimensional Euclidean distances between data points into conditional probabilities that represent similarities. The main idea and the modifications of t-SNE are (1) the symmetric version of SNE and (2) using a Student’s t distribution to compute the similarity between two points in the low-dimensional space.
 
 ![](images/schemetSNE.png)
 
-Dans Seurat, en raison de la dimension des données, part avec les données de l'ACP (reduction="pca" par défaut). Détermination des voisins par KNN puis t-SNE avec la fonction RunTSNE
+Dans Seurat, en raison de la dimension des données, part avec les données de l'ACP (reduction="pca" par défaut). Détermination des voisins par KNN puis t-SNE avec la fonction `RunTSNE()`
 
 ```{r}
 #| message: false
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
 pbmc <- RunTSNE(pbmc, dims = 1:10)
-DimPlot(pbmc, reduction = "tsne")
+DimPlot(pbmc, reduction = "tsne")+NoLegend()
 ```
-
+![](images/SO-8.png)
 
 ### UMAP
 
@@ -637,9 +708,10 @@ https://www.youtube.com/watch?v=jth4kEvJ3P8
 #| message: false
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
 pbmc <- RunUMAP(pbmc, dims = 1:10)
-DimPlot(pbmc, reduction = "umap")
+DimPlot(pbmc, reduction = "umap")+NoLegend()
 ```
 
+![](images/SO-9.png)
 
 ## Clustering
 
@@ -678,9 +750,12 @@ algorithm
 
 -   explication du principe de Louvain
 ![](images/Louvain.png)
--   nécessite un parametre de résolution (pas nb de clusters K)
--   exemple pour une valeur de résolution (FindNeighbour + FindCluster)
--   exemple de plot sur UMAP, effectifs par classe, ....
+-   nécessite un paramètre de résolution (pas nb de clusters K)
+-   Fonctions `FindNeighbour()` puis  `FindCluster()`
+
+### Exemple
+
+- Clustering pour une résolution de $0.5$
 
 ```{r}
 pbmc <- FindClusters(pbmc, resolution = 0.5)
@@ -688,10 +763,10 @@ table(pbmc@meta.data$seurat_clusters)
 DimPlot(pbmc, reduction = "umap") # par défaut il colore par seurat_clusters qui n'existait pas avant ?!
 ```
 
-### Choix de la resolution ?
+### Choix de la résolution ?
 
-- faire tourner pour plusieurs résolution
-- visualisation par ARI, clustree des différents clusterings obtenus
+- Faire tourner pour plusieurs valeurs de résolution
+- Visualisation par ARI, clustree des différents clusterings obtenus
 - En afficher deux sur UMAP figue dissociée
 - on peut tous les stocker dans objet SO mais attention à bien positionner celui étudié pour la suite
 

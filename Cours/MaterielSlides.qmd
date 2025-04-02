@@ -207,12 +207,23 @@ Peut-etre le mettre dans pour aller plus loin quand on veut basculer dans scanpy
 
 ### Présentation des données
 
-> For this tutorial, we will be analyzing the a dataset of Peripheral Blood Mononuclear Cells (PBMC) freely available from 10X Genomics. There are 2,700 single cells that were sequenced on the Illumina NextSeq 500. The raw data can be found here.
+- Données de Peripheral Blood Mononuclear Cells (PBMC) de 10X Genomics. 
 
-> We start by reading in the data. The Read10X() function reads in the output of the cellranger pipeline from 10X, returning a unique molecular identified (UMI) count matrix. The values in this matrix represent the number of molecules for each feature (i.e. gene; row) that are detected in each cell (column). Note that more recent versions of cellranger now also output using the h5 file format, which can be read in using the Read10X_h5() function in Seurat.
+- 2700 cellules séquencées en Illumina NextSeq 500. 
+
+- Téléchargez le jeu de données [ici](https://satijalab.org/seurat/articles/pbmc3k_tutorial#:~:text=can%20be%20found-,here,-.) ou sur le dépot git de la formation
+
+- Dans le dossier ".../hg19/" on a trois fichiers 
+  + barcodes.tsv
+  + genes.tsv
+  + matrix.mtx
 
 
 ### Création de l'objet Seurat
+
+- On commence par lire les données en sortie de CellRanger de 10X à l'aide de la fonction `Read10X()`. 
+
+- Remarque : pour les formats h5 plus récents, utilisez la fonction `Read10X_h5()`
 
 ```{r init}
 #| message: false
@@ -220,7 +231,11 @@ Peut-etre le mettre dans pour aller plus loin quand on veut basculer dans scanpy
 
 # Load the PBMC dataset
 pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
+```
 
+- Création ensuite de l'objet Seurat avec `CreateSeuratObject()` :
+
+```{r}
 # Initialize the Seurat object with the raw (non-normalized data).
 pbmc <- CreateSeuratObject(counts = pbmc.data, 
                            project = "pbmc3k", 
@@ -377,7 +392,7 @@ error models for scRNA-seq.
 Saket Choudhary and Rahul Satija
 -->
 
-### Example
+### Exemple
 
 ```{r}
  pbmc <- NormalizeData(pbmc, 
@@ -404,6 +419,7 @@ rm(aux)
 - HVG = High Variable Gene (feature)
 
 - Identification of highly variable features
+
 - Exhibit high cell-to-cell variation in the dataset 
 
 ![](captureContent/ExplicationHVG-Seurat.png) 
@@ -495,7 +511,7 @@ pbmc[["RNA"]]$scale.data[10:20,1:10]
 
 
 
-### Principle of PCA
+### Principe de PCA
 -   explication du principe de la PCA : changement de repère cherchant à maximiser l'inertie axiale (inertie des projetés)
 
 ```{r}
@@ -529,6 +545,7 @@ wrap_plots(A=img1,B=img2, design = design,tag_level="new")+  plot_annotation(tag
 ```
 
 - Les axes de l'ACP sont projetés sur les dimensions d'origine et passent par la moyenne (rouge).
+
 - Projection des points dans l'espace de l'ACP.
 
 ![](images/ACP-Fenelon.png)

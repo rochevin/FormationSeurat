@@ -840,12 +840,10 @@ $\mathcal G_2 = \{1,\ldots,n\} \backslash \mathcal C_k$
 
 ### Test de Wilcoxon
 
-- explication du test de Wilcoxon
-
-For a fixed gene $g$, 2 samples
-$\underline{X}=(X_{gc}; c\in\mathcal G_1)$ and $\underline{Y}=(X_{gc}; c\in\mathcal G_2)$
-
-Are these two samples equally distributed or not? 
+- Pour un gène $g$ fixé :
+ on veut tester s'il y a une différente de distribution de l'expression de ce gène entre deux échantillons 
+$\underline{X}^{(1)}=(X_{gc}; c\in\mathcal G_1)$ et 
+$\underline{X}^{(2)}=(X_{gc}; c\in\mathcal G_2)$
 
 ```{r,echo=F}
 pbmcaux<-pbmc
@@ -856,13 +854,16 @@ Idents(pbmcaux)<-pbmcaux$aux
 RidgePlot(pbmcaux,features=c("CD79A","GNG5"))
 ```
 
-- correction de test multiple
-Dans Seurat, Bonferroni
+- Test de Wilcoxon : test non paramétrique basé sur les rangs
 
-- sur l'exemple, montrer le grand nombre de gènes sélectionnés
+-  + Correction de tests multiples (dans Seurat, Bonferroni)
+
 
 ```{r}
-GeneMkWilcox3<-FindMarkers(pbmc,test.use = "wilcox",ident.1 = 3,logfc.threshold=0.5)
+GeneMkWilcox3<-FindMarkers(pbmc,
+                           test.use = "wilcox",
+                           ident.1 = 3,
+                           logfc.threshold=0.5)
 head(GeneMkWilcox3)
 sum(GeneMkWilcox3$p_val_adj<0.01)
 ```
@@ -870,39 +871,44 @@ sum(GeneMkWilcox3$p_val_adj<0.01)
 
 ### Problème de double-dipping
 
-- mettre l'exemple classique sur une classe gaussienne
+- Beaucoup de gènes marqueurs détectés $\Longrightarrow$ problème de double-dipping
 
 ![](images/doubledipping.png)
 
-- reste un probleme ouvert en statistique, loin d'une solution pour le scRNAseq
+- Reste un problème ouvert en statistique, loin d'une solution pour le scRNAseq
 
-### AUC (area under the ROC curve) 
+### Méthode AUC (area under the ROC curve) 
 
-- explication de l'AUC. ($2\times |\mbox{AUC}-0.5|$ )
-- attention ce n'est pas un test
-- choix du seuil ?
+- AUC = area under the ROC curve ($2\times |\mbox{AUC}-0.5|$ )
+- Attention, ce n'est pas un test ! 
 
 ![](images/AUROC1.png)
 ![](images/AUC.png)
 
+- Mais difficulté sur le choix du seuil !
 
-- application sur l'exemple avec FindMarkers
-
-```{r}
-GeneMkAUC3<-FindMarkers(pbmc,test.use = "roc",ident.1 = 3,logfc.threshold=0.5)
-head(GeneMkAUC3)
-```
-
-### Autres indicateurs dispo
-
-- pct.1 / pct.2 : pct1 and pct2 : $\%$ of cells where the gene is expressed in each group
-- log2FC (avg$\_$logFC) = log fold-change of the average expression between the two groups
-- Choice of thresholds ?
 
 ```{r}
+GeneMkAUC3<-FindMarkers(pbmc,
+                        test.use = "roc",
+                        ident.1 = 3,
+                        logfc.threshold=0.5)
 head(GeneMkAUC3)
+ggplot(GeneMkAUC3,aes(x=myAUC))+
+  geom_density()
 ```
 
+### Autres indicateurs disponibles
+
+- pct.1 / pct.2 : $\%$ de cellules où le gène $g$ est exprimé ($X_{cg}>0$) dans le groupe $\mathcal G_1$ / $\mathcal G_2$
+
+- avg$\_$log2FC : log2 Fold-Change de l'expression moyenne entre les deux groupes  
+
+- Pour tous ces indicateurs, il faut ensuite faire des choix de seuil
+
+```{r}
+head(GeneMkAUC3)
+```
 
 
 ### Exemple

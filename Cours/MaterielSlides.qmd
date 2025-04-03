@@ -759,6 +759,13 @@ algorithm
 
 ```{r}
 pbmc <- FindClusters(pbmc, resolution = 0.5)
+```
+
+![](images/SO-10.png)
+
+- Analyse du clustering obtenu
+
+```{r}
 table(pbmc@meta.data$seurat_clusters)
 DimPlot(pbmc, reduction = "umap") # par défaut il colore par seurat_clusters qui n'existait pas avant ?!
 ```
@@ -766,9 +773,6 @@ DimPlot(pbmc, reduction = "umap") # par défaut il colore par seurat_clusters qu
 ### Choix de la résolution ?
 
 - Faire tourner pour plusieurs valeurs de résolution
-- Visualisation par ARI, clustree des différents clusterings obtenus
-- En afficher deux sur UMAP figue dissociée
-- on peut tous les stocker dans objet SO mais attention à bien positionner celui étudié pour la suite
 
 ```{r}
 list_resolutions<-seq(0.1,1,by=0.1)
@@ -777,6 +781,8 @@ for (r in list_resolutions){
 }
 head(pbmc@meta.data)
 ```
+
+- Lien entre les clusterings obtenus via l'indicateur ARI (Adjusted Rand Index) et visuellement avec le package `clustree` par exemple 
 
 ```{r}
 #| message: false
@@ -795,12 +801,18 @@ p2<-DimPlot(pbmc,reduction = "umap",group.by = "Clusters_0.4")
 p1+p2
 
 # clustree
-
 clusterplot<-clustree(pbmc, prefix = "Clusters_")
 clusterplot
 ```
 
-Dans la suite, on va se focaliser sur le clustering obtenu avec la resolution 0.5
+- On peut tous les stocker dans objet SO mais attention à bien positionner celui étudié pour la suite avec la fonction `Idents()`. 
+
+```{r}
+colnames(pbmc@meta.data)
+```
+
+
+- Pour la suite, on va se focaliser sur le clustering obtenu avec la resolution 0.5.
 
 ```{r}
 Idents(pbmc)<-pbmc@meta.data$Clusters_0.5
@@ -813,17 +825,20 @@ DimPlot(pbmc,reduction = "umap")
 
 ## Marker gene
 
-### Question / objectif
+### Formalisation du problème
 
-- formalisation du problème
-- naturellement on est sur une question de test
+- Objectif: déterminer les gènes dont l'expression varient entre 2 "groupes" cellulaires ($\mathcal G_1$ et $\mathcal G_2$)
 
-- Aim: After the identification of cell clusters, we want to find marker genes for each cluster
-- marker gene for one cluster $\mathcal C_k$: differential expressed gene for this single cluster $\mathcal G_1 = \mathcal C_k$ (specified in ident.1), compared to all other cells $\mathcal G_2 = \{1,\ldots,n\} \backslash \mathcal C_k$.
+- Gènes marqueurs pour une classe  $\mathcal C_k$: 
+$\mathcal G_1 = \mathcal C_k$ et 
+$\mathcal G_2 = \{1,\ldots,n\} \backslash \mathcal C_k$
 
-- FindMarkers() et FindAllMarkers()
+- Côté statistique, c'est un problème de test !
 
-### Wilcoxon
+- Fonctions dans `Seurat`: `FindMarkers()` et `FindAllMarkers()`
+
+
+### Test de Wilcoxon
 
 - explication du test de Wilcoxon
 

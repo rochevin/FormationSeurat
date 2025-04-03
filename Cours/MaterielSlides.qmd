@@ -913,12 +913,7 @@ head(GeneMkAUC3)
 
 ### Exemple
 
-- on fusionne les deux tableaux obtenus par AUC et wilcox
-- on applique des filtres pour retenir un groupe de genes marqueurs pour chaque cluster
-- visualisation par DoHeatmap
-- dotPlot
-- ridgePlot
-
+- Sélection des gènes marqueurs pour le cluster 3 en appliquant des filtres
 
 ```{r}
 GeneMkAUC3$gene<-rownames(GeneMkAUC3)
@@ -935,6 +930,9 @@ SelectGene<-GeneMkCl3_merge%>%
     arrange(desc(myAUC))
 head(SelectGene)
 ```
+
+- Pour visualiser, on peut s'appuyer sur les fonctions `VlnPlot()`, 
+`FeaturePlot()`, `DotPlot()`, `RidgePlot()`
 
 ```{r}
 VlnPlot(pbmc, features = SelectGene$gene[1:3], layer = "counts", log = TRUE)
@@ -954,14 +952,21 @@ RidgePlot(pbmc,features = SelectGene$gene[1:3])
 ```
 
 
-### Exemple complet
+### Gènes marqueurs pour toutes les classes
 
-- reprise avec la fonction FindAllMArkers() pour le faire automatiquement pour toutes les classes. 
+- Utilisation de la fonction `FindAllMarkers()` pour faire la détection des gènes marqueurs sur toutes les classes (s'appuie sur `FindMarkers()`).
+
+> Attention, ne lancez pas les fonctions suivantes en raison du temps calcul
+> Chargez la sauvegarde des fichiers obtenus
 
 ```{r,eval=F}
-GeneMkWilcox<-FindAllMarkers(pbmc,logfc.threshold = 0.1,test.use = "wilcox")
+GeneMkWilcox<-FindAllMarkers(pbmc,
+                             logfc.threshold = 0.1,
+                             test.use = "wilcox")
 saveRDS(GeneMkWilcox, file = "data/GeneMkWilcox.rds")
-GeneMkAUC<-FindAllMarkers(pbmc,logfc.threshold = 0.1,test.use = "roc")
+GeneMkAUC<-FindAllMarkers(pbmc,
+                          logfc.threshold = 0.1,
+                          test.use = "roc")
 saveRDS(GeneMkAUC, file = "data/GeneMkAUC.rds")
 ```
 
@@ -969,10 +974,14 @@ saveRDS(GeneMkAUC, file = "data/GeneMkAUC.rds")
 GeneMkWilcox<-readRDS("data/GeneMkWilcox.rds")
 GeneMkWilcox$gene<-rownames(GeneMkWilcox)
 head(GeneMkWilcox)
+table(GeneMkWilcox$cluster)
+```
 
+```{r}
 GeneMkAUC<-readRDS("data/GeneMkAUC.rds")
 GeneMkAUC$gene<-rownames(GeneMkAUC)
 head(GeneMkAUC)
+table(GeneMkAUC$cluster)
 ```
 
 
@@ -987,6 +996,13 @@ GeneMk_merge<-GeneMkWilcox%>%
 GeneMk_merge<-GeneMk_merge[,c(4,3,1:2,5:10)]%>%
               arrange(cluster,desc(myAUC))
 GeneMk_merge[65:75,]  ## pourquoi ce n'est pas dans GeneMkAUC ???   
+```
+
+```{r}
+ggplot(GeneMkAUC,aes(x=cluster,y=myAUC))+
+  geom_violin(aes(color=cluster))+
+  stat_summary(fun.y=function(z) { quantile(z,0.9) }, geom="point", shape=20, size=2)
+  #geom_boxplot(width=0.1)
 ```
 
 

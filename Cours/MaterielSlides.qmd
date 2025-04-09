@@ -1205,49 +1205,65 @@ https://divingintogeneticsandgenomics.com/post/cca-alignment/
 Explication: https://xinmingtu.cn/blog/2022/CCA_dual_PCA/
 
 
+```{r}
+ifnb_cca <- IntegrateLayers(object = ifnb, 
+                        method = CCAIntegration, 
+                        orig.reduction = "pca", 
+                        new.reduction = "integrated.cca",
+                        verbose = FALSE)
+# re-join layers after integration
+ifnb_cca[["RNA"]] <- JoinLayers(ifnb_cca[["RNA"]])
+# Dimension reduction
+ifnb_cca <- FindNeighbors(ifnb_cca, 
+                      reduction = "integrated.cca", 
+                      dims = 1:30)
+ifnb_cca <- RunUMAP(ifnb_cca, 
+                dims = 1:30, 
+                reduction = "integrated.cca")
+```
+
+```{r}
+p1<-DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
+p2<-DimPlot(ifnb_cca, reduction = "umap", group.by = c("stim"))
+p1+p2
+```
+
 
 ### Harmony
 
 ![](images/HarmonyIntegration.png)  
 
-  
-### Example
-
-```{r,eval=F}
-obj <- IntegrateLayers(
-  object = ifnb, 
-  method = CCAIntegration,
-  orig.reduction = "pca", 
-  new.reduction = "integrated.cca",
-  verbose = FALSE
-)
-obj <- FindNeighbors(obj, reduction = "integrated.cca", dims = 1:30)
-```
 
 ```{r}
-ifnb <- IntegrateLayers(object = ifnb, 
-                        method = CCAIntegration, 
+ifnb_h <- IntegrateLayers(object = ifnb, 
+                        method = HarmonyIntegration, 
                         orig.reduction = "pca", 
-                        new.reduction = "integrated.cca",
+                        new.reduction = "integrated.harmony",
                         verbose = FALSE)
-
 # re-join layers after integration
-ifnb[["RNA"]] <- JoinLayers(ifnb[["RNA"]])
-```
-
-Dimension reduction
-```{r}
-ifnb <- FindNeighbors(ifnb, 
-                      reduction = "integrated.cca", 
+ifnb_h[["RNA"]] <- JoinLayers(ifnb_h[["RNA"]])
+# Dimension reduction
+ifnb_h <- FindNeighbors(ifnb_h, 
+                      reduction = "integrated.harmony", 
                       dims = 1:30)
-ifnb <- RunUMAP(ifnb, 
+ifnb_h <- RunUMAP(ifnb_h, 
                 dims = 1:30, 
-                reduction = "integrated.cca")
+                reduction = "integrated.harmony")
 ```
 
-Clustering :
+```{r}
+p3<-DimPlot(ifnb_h, reduction = "umap", group.by = c("stim"))
+p1+p2+p3
+```
+
+  
+### Clustering 
+
+Pour la suite, on poursuit avec l'intégration par CCA
 
 ```{r}
+ifnb<-ifnb_cca
+
 ifnb <- FindClusters(ifnb, resolution = 0.5)
 
 # Visualization

@@ -841,6 +841,11 @@ $\mathcal G_2 = \{1,\ldots,n\} \backslash \mathcal C_k$
 - Fonctions dans `Seurat`: `FindMarkers()` et `FindAllMarkers()`
 
 
+### Différentes situations
+
+![](images/schemaDE.png)
+
+
 ### Test de Wilcoxon
 
 - Pour un gène $g$ fixé :
@@ -1066,7 +1071,13 @@ RidgePlot(pbmc,features = rownames(SelectCl3vsCl5)[1])
 
 # Pipeline d'analyse pour deux (plusieurs) conditions biologiques
 
-### Context
+### Plusieurs types d'intégration
+
+![](images/IntegHorizontal.png)
+![](images/IntegVertical.png)
+
+
+### Integration horizontale
 
 ![](images/integ2.png)
 
@@ -1128,16 +1139,20 @@ ifnb@assays$RNA$data.STIM[1:10,1:10]
 
 ### HVG 
 
-- HVG 
-  + ?: il le fait pour chaque condition ? --> A priori oui car on a l'affichage par condition dans la console lors de l'execusion
-  + ? comment on récupère le plot par condition ? )
+- HVG : il le fait pour chaque condition 
+
+mais on a une répondre globale et un graphe global (pas par condition ?!)
   
 ```{r}
 ifnb <- FindVariableFeatures(ifnb)
 
+head(VariableFeatures(ifnb,assay="RNA",layer="counts.CTRL"))
+head(VariableFeatures(ifnb,assay="RNA",layer="counts.STIM"))
+
 top10<-head(VariableFeatures(ifnb), 10)
 plot1<-VariableFeaturePlot(ifnb)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot2
 ```
 
 ### Dimension reduction sans integration
@@ -1152,8 +1167,11 @@ ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "pca", reduction.name = "umap.uni
 DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
 ```
 
+### Overview
 
-### Integration
+
+
+### Integration dans Seurat
 
 >We now aim to integrate data from the two conditions, so that cells from the same cell type/subpopulation will cluster together.
 
@@ -1167,21 +1185,31 @@ DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
   + Anchor-based CCA integration (method=CCAIntegration)
   CCA = Canonical Correlation Analysis
 
-![](images/CCA-Seurat.png)
-Explication: https://xinmingtu.cn/blog/2022/CCA_dual_PCA/
-
 
   + Anchor-based RPCA integration (method=RPCAIntegration)
   + Harmony (method=HarmonyIntegration)
-  
-![](images/HarmonyIntegration.png)  
-  
   + FastMNN (method= FastMNNIntegration)
   + scVI (method=scVIIntegration) --> Ne semble plus être dispo
   
 
 https://www.biorxiv.org/content/10.1101/2024.12.16.628691v1.full.pdf 
+
+  
+### CCA
+
+CCA = Canonical Correlation Analysis
+
+![](images/CCA-Seurat.png)
 https://divingintogeneticsandgenomics.com/post/cca-alignment/
+
+Explication: https://xinmingtu.cn/blog/2022/CCA_dual_PCA/
+
+
+
+### Harmony
+
+![](images/HarmonyIntegration.png)  
+
   
 ### Example
 

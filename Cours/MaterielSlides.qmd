@@ -1366,7 +1366,16 @@ DotPlot(ifnb, features = markers.to.plot, cols = c("blue", "red"), dot.scale = 8
 
 ### Identify differential expressed genes across conditions
 
+#### DOC
+
+https://pmc.ncbi.nlm.nih.gov/articles/PMC9315519/ : table avec bcp de méthodes
+
+![](images/Nguyenetal-NatureComm2023.png)
+
+
+
 #### Si pas de replicat
+
 
 
 
@@ -1402,7 +1411,7 @@ ifnb <- subset(ifnb, subset = donor_id != "unknown")
 ```
 
 
-Ici regroupement par condition (CTRL/STIM) et par types cellulaires (sens??) et donaor ids 
+Ici regroupement par condition (CTRL/STIM) et par types cellulaires (sens??) et donor ids 
 
 ```{r}
 # pseudobulk
@@ -1427,13 +1436,26 @@ table(Idents(pseudo_ifnb))
 Utilisation de DESeq2 : 
 
 ```{r}
-#bulk.mono.de <- FindMarkers(object = pseudo_ifnb, 
-#                         ident.1 = "CD14 Mono_STIM", 
-#                         ident.2 = "CD14 Mono_CTRL",
-#                         test.use = "DESeq2")
-#head(bulk.mono.de, n = 10)
+bulk.mono.de <- FindMarkers(object = pseudo_ifnb, 
+                         ident.1 = "CD14 Mono_STIM", 
+                         ident.2 = "CD14 Mono_CTRL",
+                         test.use = "DESeq2")
+head(bulk.mono.de, n = 10)
+ggplot(bulk.mono.de,aes(x=avg_log2FC,y=-log10(p_val_adj)))+geom_point()
+
+
+genetop<-bulk.mono.de %>%
+  filter(p_val_adj<0.01)%>%
+  arrange(abs(avg_log2FC))%>%
+  top_n(10)
+
+DoHeatmap(pseudo_ifnb[,which(Idents(pseudo_ifnb)%in%c("CD14 Mono_STIM", "CD14 Mono_CTRL"))],features=rownames(genetop),assay="RNA",slot="data")
+
+DotPlot(pseudo_ifnb,features=rownames(genetop),group.by = "celltype.stim")
 ```
 
+
+Je ne suis pas convaincue des résultats ??!!
 
 
 # Pour aller plus loin

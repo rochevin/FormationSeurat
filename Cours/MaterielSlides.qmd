@@ -63,7 +63,11 @@ A FAIRE
 
 ### Différentes technologies
 
-???????
+![](images/type_of_sc_techno.svg)
+![](images/sc_applications.svg)
+
+From https://www.nature.com/articles/s41580-023-00615-w
+
 
 
 ### Alignement - filtrage 
@@ -82,9 +86,44 @@ https://www.10xgenomics.com/support/software/cell-ranger/latest/algorithms-overv
 ![](images/CellRanger-3.png)
 ![](images/CellRanger-2.png)
 
+![](images/gex-algo-pipeline.png)
+![](images/SC3pGEX-algo-diagram.png)
+
+
+Les étapes importantes :
+
+- Trimming des reads
+- Demultiplexage - Stockage des UMIs
+- Alignement
+- UMI counting
+
+![](https://data-science-sequencing.github.io/Win2018/assets/lecture16/biasedreads2.png)
+
+### Others
+
+https://salmon.readthedocs.io/en/latest/alevin.html
+https://umi-tools.readthedocs.io/en/latest/index.html
+
 ### Après la bio-informatique
 
-- On récupère les données sous forme de fichiers ????? 
+https://satijalab.org/seurat/reference/read10x
+
+- 3 fichiers : features, barcode et table de comptage
+
+Pour alvin : 
+
+- _quants_mat.gz_ – Compressed count matrix.
+- _quants_mat_cols.txt_ – Column Header (Gene-ids) of the matrix.
+- _quants_mat_rows.txt_ – Row Index (CB-ids) of the matrix.
+- _quants_tier_mat.gz_ – Tier categorization of the matrix.
+
+
+Need `tximport`:
+
+```
+# Reading in the alevin quants quants
+txi <- tximport(files, type="alevin")
+```
 
 ## De la question bio à la question stat
 

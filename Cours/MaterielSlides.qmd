@@ -84,7 +84,7 @@ From https://www.nature.com/articles/s41580-023-00615-w
 https://www.10xgenomics.com/support/software/cell-ranger/latest/algorithms-overview/cr-gex-algorithm
 
 ![](images/CellRanger-3.png)
-![](images/CellRanger-2.png)
+![](images/CellRanger-V2.png)
 
 ![](images/gex-algo-pipeline.png)
 ![](images/SC3pGEX-algo-diagram.png)

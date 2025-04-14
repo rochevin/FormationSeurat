@@ -1488,19 +1488,23 @@ brain@images$anterior1
 ```
 
 ```{r}
-SpatialFeaturePlot(brain, features = "nCount_Spatial") + theme(legend.position = "right")
+SpatialFeaturePlot(brain, features = "nCount_Spatial") + 
+  theme(legend.position = "right")
 ```
-
 
 ### Pipeline
 
 - Normalization
 
 - Dimension reduction
+
 - **Clustering** : take into account spatial information
+
 - Marker genes 
+
 - ....
-- Detecting spatially-variable features
+
+- Detecting **spatially-variable features**
 
 ### Example
 
@@ -1508,13 +1512,21 @@ SpatialFeaturePlot(brain, features = "nCount_Spatial") + theme(legend.position =
 #Normalization
 brain <- SCTransform(brain, assay = "Spatial", verbose = FALSE)
 brain@assays$SCT
+
+##-> englobe etape de normalisation, HVG, scale data
+VariableFeaturePlot(brain)
+
+SpatialFeaturePlot(brain, features = c("Ttr","Hbb-bs"))
 ```
+
+
 
 ```{r}
 #Dimension reduction
 brain <- RunPCA(brain, assay = "SCT", verbose = FALSE)
 brain <- FindNeighbors(brain, reduction = "pca", dims = 1:30)
 brain <- RunUMAP(brain, reduction = "pca", dims = 1:30)
+DimPlot(brain, reduction = "umap")+NoLegend()
 ```
 
 
@@ -1522,56 +1534,64 @@ brain <- RunUMAP(brain, reduction = "pca", dims = 1:30)
 
 ![](images/Xiongetal-bioRxiv2025.png)
 
-Probleme avec BayesSpace ??????
+Exemple avec BayesSpace
 
 ```{r}
-#library(BayesSpace)
-#diet.seurat = Seurat::DietSeurat(brain,
-#                                   graphs = "SCT_nn",
-#                                   dimreducs = c("pca"))
-#sce_brain = as.SingleCellExperiment(diet.seurat, assay = "SCT") 
-#colData(sce_brain) = cbind(colData(sce_brain),brain@images$anterior1$centroids@coords) 
-#sce_brain = spatialPreprocess(sce_brain, 
-#                          platform = "Visium",
-#                          skip.PCA = T, 
-#                          log.normalize = log.normalize) 
-#sce_brain <- spatialCluster(sce_brain,
-#                          nrep = 1000,
-#                          q= 8,
-#                          burn.in = 10,
-#                          model = "t",
-#                          gamma = 2)
-#brain@meta.data[["bayes.space"]] <- as.factor(sce_brain$spatial.cluster)
+library(BayesSpace)
+diet.seurat = Seurat::DietSeurat(brain,
+                                   graphs = "SCT_nn",
+                                   dimreducs = c("pca"))
+sce_brain = as.SingleCellExperiment(diet.seurat, assay = "SCT") 
+colData(sce_brain) = cbind(colData(sce_brain),
+                           brain@images$anterior1$centroids@coords) 
+sce_brain$array_col<-sce_brain$y 
+sce_brain$array_row<-sce_brain$x 
+
+sce_brain = spatialPreprocess(sce_brain, 
+                          platform = "Visium",
+                          skip.PCA = T, 
+                          log.normalize = log.normalize) 
+sce_brain <- spatialCluster(sce_brain,
+                          nrep = 1000,
+                          q= 8,
+                          burn.in = 10,
+                          model = "t",
+                          gamma = 2)
+brain@meta.data[["BayesSpace"]] <- as.factor(sce_brain$spatial.cluster)
+```
+
+```{r}
+table(brain$BayesSpace) # mettre plutot le graphe
+
+p1<-SpatialDimPlot(brain, "BayesSpace",label=TRUE,label.size=2)
+
+p2<-DimPlot(brain, reduction = "umap",group.by="BayesSpace",label=TRUE)
+p1+p2
+```
+
+Fonctions interaction dans Seurat non montrées ici
+
+### Spatial variable features
+
+>Identify features whose variability in expression can be explained to some degree by spatial location
+
+> An alternative approach, implemented in FindSpatiallyVariables(), is to search for features exhibiting spatial patterning in the absence of pre-annotation. The default method (method = 'markvariogram), is inspired by the Trendsceek, which models spatial transcriptomics data as a mark point process and computes a ‘variogram’, which identifies genes whose expression level is dependent on their spatial location. More specifically, this process calculates gamma(r) values measuring the dependence between two spots a certain “r” distance apart. By default, we use an r-value of ‘5’ in these analyses, and only compute these values for variable genes (where variation is calculated independently of spatial location) to save time.
+We note that there are multiple methods in the literature to accomplish this task, including SpatialDE, and Splotch. We encourage interested users to explore these methods, and hope to add support for them in the near future.
+
+```{r}
+## PB
+#brain <- FindSpatiallyVariableFeatures(brain, 
+#                                       assay = "SCT", 
+#                                       features=VariableFeatures(brain)[1:1000],
+#                                       selection.method = "moransi")
+```
+```{r}
+##PB
+#top.features <- head(SpatiallyVariableFeatures(brain, method = "moransi"), 6)
+#SpatialFeaturePlot(brain, features = top.features, ncol = 3, alpha = c(0.1, 1))
 ```
 
 
-```{r}
-#InstallData("stxBrain")
-
-##Seurat workflow
-#brain = LoadData("stxBrain", type = "anterior1") #load seurat data
-#brain = Seurat::FindVariableFeatures(brain) #Simple Seurat workflow for PCs
-#brain <- SCTransform(brain, assay = "Spatial", verbose = FALSE)
-#brain = Seurat::ScaleData(brain)
-#brain = Seurat::RunPCA(brain)
-
-##Convert to SCE
-#diet.seurat = Seurat::DietSeurat(brain, graphs = "pca") #slim down #Seurat obj prior to conversion
-#sce_brain = as.SingleCellExperiment(diet.seurat) #convert seurat to SCE
-#colData(sce_brain) = cbind(colData(sce_brain), #brain@images$anterior1$centroids@coords) #add spatial info to SCE
-
-##BayesSpace Workflow
-#sce_brain = spatialPreprocess(sce_brain, platform = "Visium", skip.PCA = T, log.normalize = F) #add BayesSpace metadata, without messing with PCA/logcounts
-#sce_brain = spatialCluster(sce_brain, nrep = 1000, burn.in = 100, q = 10) #quickly cluster via BayesSpace
-#clusterPlot(sce_brain) #plot via BayesSpace
-
-##Add BayesSpace results to Seurat
-#brain@meta.data = cbind(brain@meta.data, BayesSpace = sce_brain$spatial.cluster) #add BayesSpace clusters to Seurat obj
-#SpatialDimPlot(brain, "BayesSpace") #plot via Seurat
-
-
-#https://www.ezstatconsulting.com/BayesSpace/articles/thrane_melanoma.html
-```
 
 ## Pseudotime
 

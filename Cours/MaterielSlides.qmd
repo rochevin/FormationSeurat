@@ -1467,12 +1467,20 @@ Je ne suis pas convaincue des résultats ??!!
 
 ### ST Data
 
->In the Seurat object, the spot by gene expression matrix is similar to a typical “RNA” Assay but contains spot level, not single-cell level data. The image itself is stored in a new images slot in the Seurat object. The images slot also stores the information necessary to associate spots with their physical position on the tissue image.
+- The **spot** by gene expression matrix 
+
+- The information necessary to associate spots with their physical position on the tissue image
 
 
 ![](images/SpatialTransc.png)
 
 ### Example
+
+Description: 
+
+- Mouse brain spatial expression for the anterior region
+
+$G=31053$ genes across $C=2696$ spots 
 
 ```{r}
 InstallData("stxBrain")
@@ -1480,7 +1488,9 @@ brain <- LoadData("stxBrain", type = "anterior1")
 brain
 ```
 
-Contenu de l'objet : A COMPLETER
+Contenu de l'objet : 
+
+![](images/Object-ST-1.png)
 
 ```{r}
 brain@assays$Spatial$counts[1:6,1:10]
@@ -1506,7 +1516,29 @@ SpatialFeaturePlot(brain, features = "nCount_Spatial") +
 
 - Detecting **spatially-variable features**
 
-### Example
+### Normalization
+
+- Variance in molecular counts across spots is not just technical in nature, but also is dependent on the tissue anatomy. Standard approaches (such as the `LogNormalize()` function), which force each data point to have the same underlying ‘size’ after normalization, can be problematic.
+
+- Recommend using sctransform (Hafemeister and Satija, Genome Biology 2019)
+
+regularized negative binomial models of gene expression in order to account for technical artifacts while preserving biological variance. 
+UMI counts across cells in a dataset are modeled using a generalized linear model (GLM). The total UMI count per cell is used as an offset in the GLM. 
+
+$$
+x_{gc}\sim\mbox{NB}(\mu_{gc},\theta_g) \hspace{0.5cm} \ln(\mu_{gc})= \beta_{0g}+\ln(n_c)
+$$
+with $n_c = \sum_g x_{gc}$. 
+We perform three steps to remove technical noise and perform variance stabilization:
+
+  - Step 1: the inverse overdispersion parameter $\theta$ is individually estimated using a subset of genes (2000 by default), which are sampled in a density-dependent manner according to their average abundance. 
+  Step 2:  we calculate a smoothed curve that characterizes the global relationship between $\mu$ and $\theta$, thereby regularizing $\theta$ estimates as a function of gene mean. We perform the same regularization for the intercept parameter. We use the geometric mean to estimate gene abundance, which is more robust to outlier values in scRNA-seq. As outlier values can originate from multiple sources including the presence of cell doublets, errors in UMI collapsing, or ambient RNA, we have empirically improved performance when using the geometric mean instead of the arithmetic mean. Although sctransform supports multiple estimators for $\theta$, we recommend the use
+of glmGamPoi, an alternate estimator that is more robust and faster.
+
+  - Step 3: we use the regularized parameter estimates to calculate Pearson
+residuals $Z_{gc}$. The “residual variance” for a gene represents the remaining variation in gene expression that is not explained by the sctransform model,
+
+- `sctransform` normalizes the data, detects high-variance features, and stores the data in the SCT assay.
 
 ```{r}
 #Normalization
@@ -1580,15 +1612,25 @@ We note that there are multiple methods in the literature to accomplish this tas
 
 ```{r}
 ## PB
-#brain <- FindSpatiallyVariableFeatures(brain, 
-#                                       assay = "SCT", 
-#                                       features=VariableFeatures(brain)[1:1000],
-#                                       selection.method = "moransi")
+brain <- FindSpatiallyVariableFeatures(brain, 
+                                       assay = "SCT", 
+                                       features=VariableFeatures(brain)[1:1000],
+                                       selection.method = "moransi")
 ```
 ```{r}
 ##PB
 #top.features <- head(SpatiallyVariableFeatures(brain, method = "moransi"), 6)
-#SpatialFeaturePlot(brain, features = top.features, ncol = 3, alpha = c(0.1, 1))
+# dans forum pointe le pb
+
+top.features = rownames(
+  dplyr::slice_min(
+    brain[["SCT"]]@meta.features,
+    moransi.spatially.variable.rank,
+    n = 6
+  )
+)
+
+SpatialFeaturePlot(brain, features = top.features, ncol = 3, alpha = c(0.1, 1))
 ```
 
 

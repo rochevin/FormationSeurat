@@ -1573,6 +1573,23 @@ Probleme avec BayesSpace ??????
 #https://www.ezstatconsulting.com/BayesSpace/articles/thrane_melanoma.html
 ```
 
+## Pseudotime
+
+- Trajectory inference aims to reconstruct a cellular dynamic process
+- 2 main steps:
+  + Dimensionality reduction step: PCA, t-SNE, . . . . or graph-based
+techniques . . . . or clustering methods
+  + Trajectory modelling step
+- Reviews:
+  + [Cannoodt et al., 2016] : comparison of 10 methods
+  + [Saelens et al., 2018] : comparison of 29 (among 59 existing) methods
+
+
+https://github.com/dynverse/dynverse
+
+![](images/MethodesPseudotime.png)
+![](images/CompPseudoTime.png)
+![](images/CompPseudotime2.png)
 
 
 
@@ -1580,4 +1597,6 @@ Probleme avec BayesSpace ??????
 ### Appendix
 
 - Commandes Seurat : https://satijalab.org/seurat/articles/essential_commands
+
+
 

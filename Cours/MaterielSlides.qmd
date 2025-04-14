@@ -1372,6 +1372,10 @@ https://pmc.ncbi.nlm.nih.gov/articles/PMC9315519/ : table avec bcp de méthodes
 
 ![](images/Nguyenetal-NatureComm2023.png)
 
+https://academic.oup.com/bfg/article/23/2/95/7107938
+
+![](images/Dasetal-Entropy22-ReviewDEA.png)
+
 
 
 #### Si pas de replicat

@@ -1540,6 +1540,9 @@ residuals $Z_{gc}$. The “residual variance” for a gene represents the remain
 
 - `sctransform` normalizes the data, detects high-variance features, and stores the data in the SCT assay.
 
+![](images/Object-ST-2.png)
+
+
 ```{r}
 #Normalization
 brain <- SCTransform(brain, assay = "Spatial", verbose = FALSE)
@@ -1551,7 +1554,7 @@ VariableFeaturePlot(brain)
 SpatialFeaturePlot(brain, features = c("Ttr","Hbb-bs"))
 ```
 
-
+### Dimension reduction
 
 ```{r}
 #Dimension reduction
@@ -1562,7 +1565,13 @@ DimPlot(brain, reduction = "umap")+NoLegend()
 ```
 
 
+![](images/Object-ST-3.png)
+
+
+
 ### Clustering 
+
+![](images/Cheng-BriefInform2023.png)
 
 ![](images/Xiongetal-bioRxiv2025.png)
 
@@ -1611,12 +1620,12 @@ Fonctions interaction dans Seurat non montrées ici
 We note that there are multiple methods in the literature to accomplish this task, including SpatialDE, and Splotch. We encourage interested users to explore these methods, and hope to add support for them in the near future.
 
 ```{r}
-## PB
 brain <- FindSpatiallyVariableFeatures(brain, 
                                        assay = "SCT", 
                                        features=VariableFeatures(brain)[1:1000],
                                        selection.method = "moransi")
 ```
+
 ```{r}
 ##PB
 #top.features <- head(SpatiallyVariableFeatures(brain, method = "moransi"), 6)

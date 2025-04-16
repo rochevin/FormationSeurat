@@ -1211,6 +1211,9 @@ DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
 
 ### Integration dans Seurat
 
+
+
+
 >We now aim to integrate data from the two conditions, so that cells from the same cell type/subpopulation will cluster together.
 
 >We often refer to this procedure as intergration/alignment. When aligning two genome sequences together, identification of shared/homologous regions can help to interpret differences between the sequences as well. Similarly for scRNA-seq integration, our goal is not to remove biological differences across conditions, but to learn shared cell types/states in an initial step - specifically because that will enable us to compare control stimulated and control profiles for these individual cell types.
@@ -1237,8 +1240,16 @@ https://www.biorxiv.org/content/10.1101/2024.12.16.628691v1.full.pdf
 
 CCA = Canonical Correlation Analysis
 
+>The goal of CCA here is to find linear combinations of the genes in both datasets that produce correlated cell embeddings in a lower-dimensional space. Essentially, we aim to align the two datasets by identifying the correlated patterns in gene expression that are shared between the two sets of cells.
+
+> CCA c'est Dual PCA pour deux datasets. SVD $X Y^\top = U\Sighma V$ $Z_X = U \Sigma^{1/2}$ et $Z_Y = V \Sigma^{1/2}$
+> $X$ et $Y$ deux jeux de données avec les mêmes gènes $X\in\mathbb R^{n\times g}$ et $Y\in\mathbb R^{m\times g}$
+> find $a\in\mathbb R^g$ et $b\in\mathbb R^g$ such that $u=X^\top a$ et $v = Y^\top b$ where $u$ and $v$ are the canonical variates, and the goal is to maximize the correlation $\mbox{corr}(u,v)$. 
+> Détail ici : https://divingintogeneticsandgenomics.com/post/cca-alignment/
+
+![](images/CCA-DualPCA.png)
+
 ![](images/CCA-Seurat.png)
-https://divingintogeneticsandgenomics.com/post/cca-alignment/
 
 Explication: https://xinmingtu.cn/blog/2022/CCA_dual_PCA/
 
@@ -1268,6 +1279,15 @@ p1+p2
 
 
 ### Harmony
+
+> The Harmony algorithm inputs a PCA embedding (Z) of cells, along with their batch assignments (ϕ), and returns a batch corrected embedding (). This algorithm, summarized as Algorithm 1 below, iterates between two complementary stages: maximum diversity clustering (Algorithm 2) and a mixture model based linear batch correction (Algorithm 3). The clustering step uses the batch corrected embedding to compute a soft assignment of cells to clusters, encoded in the matrix R. The correction step uses these soft clusters to compute a new corrected embedding from the original one. Efficient implementations of Harmony, including the clustering and correction subroutines, are available as part of an R package at https://github.com/immunogenomics/harmony.
+
+![](images/HarmonyAlgo1.png)
+![](images/HarmonyAlgo2.png)
+![](images/HarmonyAlgo3.png)
+
+
+
 
 ![](images/HarmonyIntegration.png)  
 
@@ -1663,6 +1683,14 @@ https://github.com/dynverse/dynverse
 ![](images/CompPseudotime2.png)
 
 
+## Comment basculer entre Seurat / Scanpy / SingleCellExperiment
+
+https://mojaveazure.github.io/seurat-disk/articles/convert-anndata.html
+as.Seurat(<CellDataSet>) 
+as.Seurat(<SingleCellExperiment>)
+as.SingleCellExperiment()
+https://github.com/cellgeni/sceasy
+https://www.youtube.com/watch?v=como93CmnS8
 
 
 ### Appendix

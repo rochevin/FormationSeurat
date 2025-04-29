@@ -1136,12 +1136,14 @@ The object contains data from human PBMC from two conditions, interferon-stimula
 
 In previous versions of Seurat, we would require the data to be represented as two different Seurat objects. In Seurat v5, we keep all the data in one object, but simply split it into multiple ‘layers’. To learn more about layers, check out our Seurat object interaction vignette.
 
+#### With default command from seurat data
 
 ```{r}
 # devtools::install_github('satijalab/seurat-data')
 InstallData("ifnb")
 ifnb <- LoadData("ifnb")
 ```
+
 
 ```{r}
 Assays(ifnb)
@@ -1161,6 +1163,100 @@ ifnb
 dim(ifnb[["RNA"]]$counts.CTRL)
 dim(ifnb[["RNA"]]$counts.STIM)
 ```
+
+
+#### Use count matrix as input instead of object
+
+
+##### Method 1 from `?ifnb`
+
+```bash
+cd data/
+wget https://www.dropbox.com/s/79q6dttg8yl20zg/immune_alignment_expression_matrices.zip
+unzip immune_alignment_expression_matrices.zip
+rm immune_alignment_expression_matrices.zip
+```
+
+```{r}
+ctrl.data <- data.frame(data.table::fread('data/immune_control_expression_matrix.txt.gz',sep = "\t"),row.names=1)
+stim.data <- data.frame(data.table::fread('data/immune_stimulated_expression_matrix.txt.gz',sep = "\t"),row.names=1)
+ctrl <- Seurat::CreateSeuratObject(counts = ctrl.data, project = 'CTRL', min.cells = 5)
+ctrl$stim <- 'CTRL'
+ctrl <- subset(x = ctrl, subset = nFeature_RNA > 500)
+stim <- Seurat::CreateSeuratObject(counts = stim.data, project = 'STIM', min.cells = 5)
+stim$stim <- 'STIM'
+stim <- subset(x = stim, subset = nFeature_RNA > 500)
+ifnb <- merge(x = ctrl, y = stim)
+Seurat::Project(object = ifnb) <- 'ifnb'
+annotations <- readRDS(file = system.file('extdata/annotations/annotations.Rds', package = 'ifnb.SeuratData'))
+ifnb <- Seurat::AddMetaData(object = ifnb, metadata = annotations)
+```
+
+
+```{r}
+Assays(ifnb)
+Layers(ifnb) # difference entre count et data ??
+
+dim(ifnb)    # 14053 13999
+table(ifnb$orig.ident)
+table(ifnb$stim)
+```
+
+On splitte selon les deux conditions (counts.CTRL et counts.STIM)
+
+```{r}
+dim(ifnb[["RNA"]]$counts.CTRL)
+dim(ifnb[["RNA"]]$counts.STIM)
+```
+
+##### Method 2 from GEO and using `Read10X`
+
+From https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE96583
+
+```bash
+wget https://www.ncbi.nlm.nih.gov/geo/download/\?acc\=GSM2560248\&format\=file\&file\=GSM2560248%5F2%2E1%2Emtx%2Egz -O GSM2560248_2.1.mtx.gz
+wget https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSM2560248&format=file&file=GSM2560248%5Fbarcodes%2Etsv%2Egz -O GSM2560248_barcodes.tsv.gz
+wget https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSM2560249&format=file&file=GSM2560249%5F2%2E2%2Emtx%2Egz -O GSM2560249_2.2.mtx.gz
+wget https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSM2560249&format=file&file=GSM2560249%5Fbarcodes%2Etsv%2Egz -O GSM2560249_barcodes.tsv.gz
+
+```
+
+```r
+expression_matrix_ctrl <- ReadMtx(
+  mtx = "data/GSM2560248_2.1.mtx.gz", features = "data/GSE96583_batch2.genes.tsv.gz",
+  cells = "data/GSM2560248_barcodes.tsv.gz"
+)
+
+ctrl <- Seurat::CreateSeuratObject(counts = expression_matrix_ctrl, project = 'CTRL', min.cells = 5)
+ctrl$stim <- 'CTRL'
+ctrl <- subset(x = ctrl, subset = nFeature_RNA > 500)
+
+expression_matrix_stim <- ReadMtx(
+  mtx = "data/GSM2560249_2.2.mtx.gz", features = "data/GSE96583_batch2.genes.tsv.gz",
+  cells = "data/GSM2560249_barcodes.tsv.gz"
+)
+
+stim <- Seurat::CreateSeuratObject(counts = expression_matrix_stim, project = 'STIM', min.cells = 5)
+stim$stim <- 'STIM'
+stim <- subset(x = stim, subset = nFeature_RNA > 500)
+
+
+ifnb <- merge(x = ctrl, y = stim)
+Seurat::Project(object = ifnb) <- 'ifnb'
+
+```
+
+> **Warning** Issues with this method:
+> Some cell names are duplicated across objects provided. Renaming to enforce unique cell names.
+
+```r
+table(colnames(ctrl[["RNA"]]) %in%colnames(stim[["RNA"]]))
+
+FALSE  TRUE 
+ 7926   112 
+```
+
+
 
 ### Normalization
 
@@ -1242,7 +1338,7 @@ CCA = Canonical Correlation Analysis
 
 >The goal of CCA here is to find linear combinations of the genes in both datasets that produce correlated cell embeddings in a lower-dimensional space. Essentially, we aim to align the two datasets by identifying the correlated patterns in gene expression that are shared between the two sets of cells.
 
-> CCA c'est Dual PCA pour deux datasets. SVD $X Y^\top = U\Sighma V$ $Z_X = U \Sigma^{1/2}$ et $Z_Y = V \Sigma^{1/2}$
+> CCA c'est Dual PCA pour deux datasets. SVD $X Y^\top = U\Sigma V$ $Z_X = U \Sigma^{1/2}$ et $Z_Y = V \Sigma^{1/2}$
 > $X$ et $Y$ deux jeux de données avec les mêmes gènes $X\in\mathbb R^{n\times g}$ et $Y\in\mathbb R^{m\times g}$
 > find $a\in\mathbb R^g$ et $b\in\mathbb R^g$ such that $u=X^\top a$ et $v = Y^\top b$ where $u$ and $v$ are the canonical variates, and the goal is to maximize the correlation $\mbox{corr}(u,v)$. 
 > Détail ici : https://divingintogeneticsandgenomics.com/post/cca-alignment/

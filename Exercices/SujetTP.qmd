@@ -1,0 +1,95 @@
+---
+title: "Sujet du TP"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    number-sections: true
+date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
+execute:
+  cache: true
+---
+
+```{r}
+# Les librairies
+
+library(Seurat)
+```
+
+
+
+# Démarrage avec Seurat 
+
+### Présentation des données 
+- Données de Peripheral Blood Mononuclear Cells (PBMC) de 10X Genomics. 
+
+- 2700 cellules séquencées en Illumina NextSeq 500. 
+
+- Téléchargez le jeu de données [ici](https://satijalab.org/seurat/articles/pbmc3k_tutorial#:~:text=can%20be%20found-,here,-.) ou sur le dépot git de la formation
+
+- Dans le dossier "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/" on a trois fichiers 
+  + barcodes.tsv
+  + genes.tsv
+  + matrix.mtx
+  
+### Création de l'objet Seurat
+
+- On commence par lire les données en sortie de CellRanger de 10X à l'aide de la fonction `Read10X()`. 
+
+- Remarque : pour les formats h5 plus récents, utilisez la fonction `Read10X_h5()`
+
+```{r init}
+#| message: false
+#| warning: false
+
+# Load the PBMC dataset
+pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
+```
+
+- Création ensuite de l'objet Seurat avec `CreateSeuratObject()` :
+
+```{r}
+# Initialize the Seurat object with the raw (non-normalized data).
+pbmc <- CreateSeuratObject(counts = pbmc.data, 
+                           project = "pbmc3k", 
+                           min.cells = 3, 
+                           min.features = 200)
+class(pbmc)
+```
+
+### Contenu de l'objet Seurat
+
+```{r}
+pbmc
+
+dim(pbmc)
+pbmc@assays$RNA$counts[10:20,1:15]
+Assays(pbmc)
+```
+
+# Contrôle qualité
+
+- A la création de l'objet **SO**, calcul de `nCount_RNA` et `nFeature_RNA`, disponibles dans `meta.data`
+
+```{r}
+head(pbmc@meta.data)
+# nCount_RNA
+sum(pbmc@assays$RNA$counts[,1])
+#nFeature_RNA
+sum(pbmc@assays$RNA$counts[,1]>0)
+```
+
+- Visualisation par violin plot avec la fonction `VlnPlot()` :
+
+```{r}
+VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA"), ncol = 2)
+```
+
+- Ajout de métriques sur les cellules, qui seront accessibles dans SO@meta.data. 
+
+```{r}
+pbmc$log10GenesPerUMI <- log10(pbmc$nFeature_RNA) /   log10(pbmc$nCount_RNA)
+head(pbmc@meta.data)
+VlnPlot(pbmc, features = c("log10GenesPerUMI"))
+```

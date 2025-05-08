@@ -15,6 +15,9 @@ execute:
 # Les librairies
 
 library(Seurat)
+library(ggplot2)
+library(reshape2)
+library(corrplot)
 ```
 
 
@@ -68,7 +71,7 @@ pbmc@assays$RNA$counts[10:20,1:15]
 Assays(pbmc)
 ```
 
-# Contrôle qualité
+### Contrôle qualité
 
 - A la création de l'objet **SO**, calcul de `nCount_RNA` et `nFeature_RNA`, disponibles dans `meta.data`
 
@@ -92,4 +95,146 @@ VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA"), ncol = 2)
 pbmc$log10GenesPerUMI <- log10(pbmc$nFeature_RNA) /   log10(pbmc$nCount_RNA)
 head(pbmc@meta.data)
 VlnPlot(pbmc, features = c("log10GenesPerUMI"))
+```
+
+- Mitochondrial ratio :
+
+Avec la fonction `PercentageFeatureSet()`, on calcule le pourcentage de tous les comptages venant d'un sous-ensemble de gènes. 
+
+```{r}
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, 
+                                             pattern = "^MT-")
+head(pbmc@meta.data, 5)
+VlnPlot(pbmc, features = c("percent.mt"))
+```
+
+- Scatter plot : La fonction `FeatureScatter()` permet de tracer un scatter plot entre deux caractéristiques d'un ensemble de cellules. La correlation de Pearson entre les deux caractéristiques est donnée en haut du graphique.
+
+```{r}
+plot1 <- FeatureScatter(pbmc, 
+                        feature1 = "nCount_RNA", 
+                        feature2 = "percent.mt")
+plot2 <- FeatureScatter(pbmc, 
+                        feature1 = "nCount_RNA", 
+                        feature2 = "nFeature_RNA")
+plot1 + plot2
+```
+
+### Filtrage des cellules 
+
+- Filtrage préliminaire des cellules :
+
+```{r}
+dim(pbmc)
+pbmc <- subset(pbmc, 
+               subset = nFeature_RNA > 200 & 
+                        nFeature_RNA < 2500 & 
+                        percent.mt < 5)
+dim(pbmc)
+```
+
+# Normalisation
+
+```{r}
+pbmc <- NormalizeData(pbmc, 
+                       normalization.method = "LogNormalize", 
+                       scale.factor = 10000)
+pbmc@assays$RNA$data[10:20,1:5]
+# pbmc[["RNA"]]$data[10:20,1:10]
+```
+  
+```{r,echo=F}
+aux<-data.frame(brut=apply(pbmc@assays$RNA$counts,2,sum),
+                norm=apply(pbmc@assays$RNA$data,2,sum))
+ggplot(melt(aux),aes(x=variable,y=value))+
+  geom_boxplot()
+rm(aux)
+```
+
+# Identification des gènes HVG
+
+- HVG = High Variable Gene (feature)
+
+Fonction `FindVariableFeatures()` 
+
+```{r}
+pbmc <- FindVariableFeatures(pbmc, 
+                             selection.method = "vst", 
+                             nfeatures = 2000)
+length(VariableFeatures(pbmc))
+# Identification du top 10 des HVG
+top10<-head(VariableFeatures(pbmc), 10)
+top10
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(pbmc)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot2
+```
+
+# Réduction de dimension
+
+### Scale 
+
+- Pour chaque cellule, les données sont réduites en utilisant la fonction `ScaleData()` :
+
+```{r}
+pbmc<-ScaleData(pbmc) #features = Default is variable features J (=2000 par défaut)
+dim(pbmc@assays$RNA$scale.data) # on a plus que J=2000 gènes 
+pbmc[["RNA"]]$scale.data[10:20,1:10]
+```
+
+### PCA 
+
+- PCA avec la fonction `RunPCA()` :
+
+```{r}
+#| message: false
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+#str(pbmc@reductions$pca)
+```
+
+- On retrouve les coordonnées des projections des cellules sur les différents axes principaux (composantes principales)
+
+```{r}
+head(pbmc@reductions$pca@cell.embeddings)    #head(pbmc[["pca"]]@cell.embeddings)
+#head(Embeddings(pbmc@reductions$pca))
+```
+
+et visualisation de la projection des cellules dans le premier plan factoriel avec la fonction `DimPlot()` : 
+
+```{r}
+DimPlot(pbmc, reduction = "pca") + NoLegend()
+```
+
+- Les corrélations entre les gènes et les composantes principales
+
+```{r}
+head(pbmc@reductions$pca@feature.loadings)
+corrplot(pbmc[["pca"]]@feature.loadings[VariableFeatures(pbmc)[1:10],1:5],method="ellipse")
+```
+
+- Gènes les plus corrélés avec les composantes principales : 
+
+```{r}
+print(pbmc[["pca"]], dims = 1:3, nfeatures = 5)
+VizDimLoadings(pbmc, dims = 1:2, reduction = "pca",nfeatures=20)
+```
+
+```{r}
+DimHeatmap(pbmc, dims = 1:2, cells = 500, balanced = TRUE)
+```
+
+- Pour choisir le nombre de composantes principales à conserver :
+
+```{r}
+ElbowPlot(pbmc)
+```
+
+### UMAP
+
+```{r}
+#| message: false
+pbmc <- FindNeighbors(pbmc, dims = 1:10)
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+DimPlot(pbmc, reduction = "umap")+NoLegend()
 ```

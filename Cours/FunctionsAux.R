@@ -84,13 +84,14 @@ NbCluster_gg<-function(Seurat_Object,resolutions){
   return(cluster_plot)  
 }
 
-EffPlot<-function(Seurat_Object,resolution){
+
+EffPlot<-function(Seurat_Object,clustname,resolution){
   library(Seurat)
   library(ggplot2)
   library(RColorBrewer)
   #library(tidyverse)
   
-  clusters<-as.factor(Seurat_Object[[paste0("Clusters_", resolution)]][, 1])
+  clusters<-as.factor(Seurat_Object[[clustname]][, 1])
   n_clusters <- length(unique(clusters))
   colors <- brewer.pal(min(n_clusters, 12), "Set3")
   if (n_clusters > 12) {
@@ -105,7 +106,7 @@ EffPlot<-function(Seurat_Object,resolution){
   df_proportions <- as.data.frame(proportions)
   colnames(df_proportions) <- c("Cluster", "Proportion")
   df_proportions<-merge(df_proportions,df_Nbcluster,by="Cluster",sort=F)
-
+  
   geff<-ggplot(df_proportions, aes(x=Cluster,y=Proportion,fill=Cluster))+
     geom_bar(stat="identity")+
     geom_text(aes(label=Effectif),vjust=1.6,position=position_dodge(0.9),size=3,color="black")+

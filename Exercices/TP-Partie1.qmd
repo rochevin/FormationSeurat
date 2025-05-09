@@ -1,0 +1,485 @@
+---
+title: "TP - Partie 1"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    number-sections: true
+date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
+execute:
+  cache: true
+---
+
+```{r}
+# Les librairies
+
+library(Seurat)
+library(ggplot2)
+library(reshape2)
+library(corrplot)
+library(clustree)
+library(tidyverse)
+
+# Fonctions auxiliaires
+source("Cours/FunctionsAux.R")
+```
+
+
+
+# Démarrage avec Seurat 
+
+### Présentation des données 
+- Données de Peripheral Blood Mononuclear Cells (PBMC) de 10X Genomics. 
+
+- 2700 cellules séquencées en Illumina NextSeq 500. 
+
+- Téléchargez le jeu de données [ici](https://satijalab.org/seurat/articles/pbmc3k_tutorial#:~:text=can%20be%20found-,here,-.) ou sur le dépot git de la formation
+
+- Dans le dossier "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/" on a trois fichiers 
+  + barcodes.tsv
+  + genes.tsv
+  + matrix.mtx
+  
+### Création de l'objet Seurat
+
+- On commence par lire les données en sortie de CellRanger de 10X à l'aide de la fonction `Read10X()`. 
+
+- Remarque : pour les formats h5 plus récents, utilisez la fonction `Read10X_h5()`
+
+```{r init}
+#| message: false
+#| warning: false
+
+# Load the PBMC dataset
+pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
+```
+
+- Création ensuite de l'objet Seurat avec `CreateSeuratObject()` :
+
+```{r}
+# Initialize the Seurat object with the raw (non-normalized data).
+pbmc <- CreateSeuratObject(counts = pbmc.data, 
+                           project = "pbmc3k", 
+                           min.cells = 3, 
+                           min.features = 200)
+class(pbmc)
+```
+
+### Contenu de l'objet Seurat
+
+```{r}
+pbmc
+
+dim(pbmc)
+pbmc@assays$RNA$counts[10:20,1:15]
+Assays(pbmc)
+```
+
+### Contrôle qualité
+
+- A la création de l'objet **SO**, calcul de `nCount_RNA` et `nFeature_RNA`, disponibles dans `meta.data`
+
+```{r}
+head(pbmc@meta.data)
+# nCount_RNA
+sum(pbmc@assays$RNA$counts[,1])
+#nFeature_RNA
+sum(pbmc@assays$RNA$counts[,1]>0)
+```
+
+- Visualisation par violin plot avec la fonction `VlnPlot()` :
+
+```{r}
+VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA"), ncol = 2)
+```
+
+- Ajout de métriques sur les cellules, qui seront accessibles dans SO@meta.data. 
+
+```{r}
+pbmc$log10GenesPerUMI <- log10(pbmc$nFeature_RNA) /   log10(pbmc$nCount_RNA)
+head(pbmc@meta.data)
+VlnPlot(pbmc, features = c("log10GenesPerUMI"))
+```
+
+- Mitochondrial ratio :
+
+Avec la fonction `PercentageFeatureSet()`, on calcule le pourcentage de tous les comptages venant d'un sous-ensemble de gènes. 
+
+```{r}
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, 
+                                             pattern = "^MT-")
+head(pbmc@meta.data, 5)
+VlnPlot(pbmc, features = c("percent.mt"))
+```
+
+- Scatter plot : La fonction `FeatureScatter()` permet de tracer un scatter plot entre deux caractéristiques d'un ensemble de cellules. La correlation de Pearson entre les deux caractéristiques est donnée en haut du graphique.
+
+```{r}
+plot1 <- FeatureScatter(pbmc, 
+                        feature1 = "nCount_RNA", 
+                        feature2 = "percent.mt")
+plot2 <- FeatureScatter(pbmc, 
+                        feature1 = "nCount_RNA", 
+                        feature2 = "nFeature_RNA")
+plot1 + plot2
+```
+
+### Filtrage des cellules 
+
+- Filtrage préliminaire des cellules :
+
+```{r}
+dim(pbmc)
+pbmc <- subset(pbmc, 
+               subset = nFeature_RNA > 200 & 
+                        nFeature_RNA < 2500 & 
+                        percent.mt < 5)
+dim(pbmc)
+```
+
+# Normalisation
+
+```{r}
+pbmc <- NormalizeData(pbmc, 
+                       normalization.method = "LogNormalize", 
+                       scale.factor = 10000)
+pbmc@assays$RNA$data[10:20,1:5]
+# pbmc[["RNA"]]$data[10:20,1:10]
+```
+  
+```{r,echo=F}
+aux<-data.frame(brut=apply(pbmc@assays$RNA$counts,2,sum),
+                norm=apply(pbmc@assays$RNA$data,2,sum))
+ggplot(melt(aux),aes(x=variable,y=value))+
+  geom_boxplot()
+rm(aux)
+```
+
+# Identification des gènes HVG
+
+- HVG = High Variable Gene (feature)
+
+Fonction `FindVariableFeatures()` 
+
+```{r}
+pbmc <- FindVariableFeatures(pbmc, 
+                             selection.method = "vst", 
+                             nfeatures = 2000)
+length(VariableFeatures(pbmc))
+# Identification du top 10 des HVG
+top10<-head(VariableFeatures(pbmc), 10)
+top10
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(pbmc)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot2
+```
+
+# Réduction de dimension
+
+### Scale 
+
+- Pour chaque cellule, les données sont réduites en utilisant la fonction `ScaleData()` :
+
+```{r}
+pbmc<-ScaleData(pbmc) #features = Default is variable features J (=2000 par défaut)
+dim(pbmc@assays$RNA$scale.data) # on a plus que J=2000 gènes 
+pbmc[["RNA"]]$scale.data[10:20,1:10]
+```
+
+### PCA 
+
+- PCA avec la fonction `RunPCA()` :
+
+```{r}
+#| message: false
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+#str(pbmc@reductions$pca)
+```
+
+- On retrouve les coordonnées des projections des cellules sur les différents axes principaux (composantes principales)
+
+```{r}
+head(pbmc@reductions$pca@cell.embeddings)    #head(pbmc[["pca"]]@cell.embeddings)
+#head(Embeddings(pbmc@reductions$pca))
+```
+
+et visualisation de la projection des cellules dans le premier plan factoriel avec la fonction `DimPlot()` : 
+
+```{r}
+DimPlot(pbmc, reduction = "pca") + NoLegend()
+```
+
+- Les corrélations entre les gènes et les composantes principales
+
+```{r}
+head(pbmc@reductions$pca@feature.loadings)
+corrplot(pbmc[["pca"]]@feature.loadings[VariableFeatures(pbmc)[1:10],1:5],method="ellipse")
+```
+
+- Gènes les plus corrélés avec les composantes principales : 
+
+```{r}
+print(pbmc[["pca"]], dims = 1:3, nfeatures = 5)
+VizDimLoadings(pbmc, dims = 1:2, reduction = "pca",nfeatures=20)
+```
+
+```{r}
+DimHeatmap(pbmc, dims = 1:2, cells = 500, balanced = TRUE)
+```
+
+- Pour choisir le nombre de composantes principales à conserver :
+
+```{r}
+ElbowPlot(pbmc)
+```
+
+### UMAP
+
+```{r}
+#| message: false
+pbmc <- FindNeighbors(pbmc, dims = 1:10)
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+DimPlot(pbmc, reduction = "umap")+NoLegend()
+```
+
+
+# Clustering
+
+### Pour une résolution fixée
+
+- Algorithme de Louvain avec résolution de $0.5$
+
+- Fonction `FindClusters()` :
+
+```{r}
+pbmc <- FindClusters(pbmc, resolution = 0.5)
+```
+
+- Analyse du clustering obtenu :
+
+  - Effectifs par classe :
+  
+  Rem: la fonction `EffPlot()` est une fonction auxiliaire disponible dans le fichier FunctionAux.R.  
+
+```{r}
+table(pbmc@meta.data$seurat_clusters)
+EffPlot(pbmc,resolution=0.5,clustname = "seurat_clusters")
+```
+
+```{r}
+DimPlot(pbmc, reduction = "umap") 
+```
+
+### Choix de la résolution ?
+
+- Faire tourner pour plusieurs valeurs de résolution
+
+```{r}
+list_resolutions<-seq(0.1,1,by=0.1)
+for (r in list_resolutions){
+    pbmc <- FindClusters(pbmc, resolution = r, cluster.name = paste0("Clusters_", r))
+}
+head(pbmc@meta.data)
+```
+
+- Lien entre les clusterings obtenus via l'indicateur ARI (Adjusted Rand Index) et visuellement avec le package `clustree` par exemple 
+
+```{r}
+#| message: false
+
+# Visualisation ARI - fonctions auxiliaires
+source("Cours/FunctionsAux.R")
+ari_matrix <- ARI_matrix(pbmc, list_resolutions)
+heatmapari(ari_matrix, list_resolutions)
+
+# Nb de clusters
+NbCluster_gg(pbmc, list_resolutions)
+
+# Comparaison visuelle des clusterings obtenus
+p1<-DimPlot(pbmc,reduction = "umap",group.by = "Clusters_0.3")
+p2<-DimPlot(pbmc,reduction = "umap",group.by = "Clusters_0.4")
+p1+p2
+
+# clustree
+clusterplot<-clustree(pbmc, prefix = "Clusters_")
+clusterplot
+```
+
+- Pour la suite, on va se focaliser sur le clustering obtenu avec la resolution 0.5.
+
+```{r}
+Idents(pbmc)<-pbmc@meta.data$Clusters_0.5
+pbmc$seurat_clusters<-pbmc@meta.data$Clusters_0.5
+EffPlot(pbmc,resolution=0.5,clustname="seurat_clusters")
+DimPlot(pbmc,reduction = "umap")
+```
+
+
+
+# Marker genes
+
+### Pour le cluster 3
+
+- Test de Wilcoxon avec la fonction `FindMarkers(...,test.use="wilcox")`
+
+```{r}
+GeneMkWilcox3<-FindMarkers(pbmc,
+                           test.use = "wilcox",
+                           ident.1 = 3,
+                           logfc.threshold=0.5)
+head(GeneMkWilcox3)
+sum(GeneMkWilcox3$p_val_adj<0.01)
+```
+
+```{r}
+ggplot(GeneMkWilcox3,aes(x=p_val_adj))+
+  geom_density()
+```
+
+- Calcul des AUC avec `FindMarkers(...,test.use="roc")`
+
+```{r}
+GeneMkAUC3<-FindMarkers(pbmc,
+                        test.use = "roc",
+                        ident.1 = 3,
+                        logfc.threshold=0.5)
+head(GeneMkAUC3)
+ggplot(GeneMkAUC3,aes(x=myAUC))+
+  geom_density()
+```
+
+- Sélection des gènes marqueurs pour le cluster 3 en appliquant des filtres
+
+```{r}
+GeneMkAUC3$gene<-rownames(GeneMkAUC3)
+GeneMkWilcox3$gene<-rownames(GeneMkWilcox3)
+GeneMkCl3_merge<-merge(GeneMkAUC3,GeneMkWilcox3[,c(1,5,6)],by="gene")
+head(GeneMkCl3_merge)
+
+SelectGene<-GeneMkCl3_merge%>%
+    filter(myAUC>0.9)%>%
+    filter(avg_log2FC>2)%>%
+    arrange(desc(myAUC))
+dim(SelectGene)
+head(SelectGene)
+```
+
+- Pour visualiser, on peut s'appuyer sur les fonctions `VlnPlot()`, 
+`FeaturePlot()`, `DotPlot()`, `RidgePlot()` de Seurat
+
+```{r}
+VlnPlot(pbmc, features = SelectGene$gene[1:3], layer = "counts", log = TRUE)
+VlnPlot(pbmc, features = SelectGene$gene[1:3], layer = "data", log = TRUE)
+```
+
+```{r}
+FeaturePlot(pbmc, features = SelectGene$gene[1:3])
+```
+
+```{r}
+DotPlot(pbmc,features = SelectGene$gene[1:3])
+```
+
+```{r}
+RidgePlot(pbmc,features = SelectGene$gene[1:3])
+```
+
+### Marker genes pour toutes les classes 
+
+- Utilisation de la fonction `FindAllMarkers()`
+
+Je vous donne ici le code qui a permis d'obtenir les résultats. 
+Pour des raisons de temps calcul, on va récupérer les résultats sauvegardés.
+
+```{r,eval=F}
+#GeneMkWilcox<-FindAllMarkers(pbmc,
+#                             logfc.threshold = 0.1,
+#                             test.use = "wilcox")
+#saveRDS(GeneMkWilcox, file = "data/GeneMkWilcox.rds")
+
+GeneMkWilcox<-readRDS("data/GeneMkWilcox.rds")
+GeneMkWilcox$gene<-rownames(GeneMkWilcox)
+head(GeneMkWilcox)
+table(GeneMkWilcox$cluster)
+table(GeneMkWilcox$cluster[which(GeneMkWilcox$p_val_adj<0.01)])
+```
+
+
+
+```{r}
+#GeneMkAUC<-FindAllMarkers(pbmc,
+#                          logfc.threshold = 0.1,
+#                          test.use = "roc")
+#saveRDS(GeneMkAUC, file = "data/GeneMkAUC.rds")
+
+GeneMkAUC<-readRDS("data/GeneMkAUC.rds")
+GeneMkAUC$gene<-rownames(GeneMkAUC)
+head(GeneMkAUC)
+table(GeneMkAUC$cluster)
+```
+
+
+```{r}
+ggplot(GeneMkAUC,aes(x=cluster,y=myAUC))+
+  geom_violin(aes(color=cluster))+
+  stat_summary(fun.y=function(z) { quantile(z,0.9) }, geom="point", shape=20, size=2)
+```
+
+
+```{r}
+GeneMkAUC %>%
+    group_by(cluster) %>%
+    arrange(desc(myAUC))%>%
+    filter(avg_log2FC > 1) %>%
+    slice_head(n = 10) %>%
+    ungroup() -> top10
+DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+```
+
+Rem: warning car certains genes dans le top10 ne sont pas des gènes HVG. Or la fonction DoHeatMap s'appuie sur les gènes HVG et les données centrées réduites (scale.data) par défaut. 
+
+
+### Marker genes entre deux clusters
+
+- Fonction `FindMarkers()` en précisant `ident.1` et `ident.2`
+
+
+```{r}
+GeneMkCl3vsCl5<-FindMarkers(pbmc,
+                  test.use="roc",
+                  ident.1=3,
+                  ident.2=5,
+                  logfc.threshold=0.1)
+ggplot(GeneMkCl3vsCl5,aes(x=myAUC))+
+  geom_density()
+```
+
+```{r}
+SelectCl3vsCl5<-GeneMkCl3vsCl5%>%
+  filter(myAUC>0.9)%>%
+  arrange(desc(avg_log2FC))
+head(SelectCl3vsCl5)
+```
+
+```{r}
+DoHeatmap(pbmc[,which(pbmc$Clusters_0.5 %in% c(3,5))], 
+          features = rownames(SelectCl3vsCl5),
+          assay = "RNA",slot = "data") + 
+  NoLegend()
+```
+
+```{r}
+FeaturePlot(pbmc, features = rownames(SelectCl3vsCl5)[1:3])
+```
+
+```{r}
+DotPlot(pbmc,features = rownames(SelectCl3vsCl5)[1:10])+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r}
+RidgePlot(pbmc,features = rownames(SelectCl3vsCl5)[1])
+```
+

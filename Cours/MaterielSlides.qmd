@@ -858,7 +858,7 @@ colnames(pbmc@meta.data)
 ```{r}
 Idents(pbmc)<-pbmc@meta.data$Clusters_0.5
 table(Idents(pbmc))
-EffPlot(pbmc,resolution=0.5,clustname="Clusters_0.5")
+#EffPlot(pbmc,resolution=0.5,clustname="Clusters_0.5")
 pbmc$seurat_clusters<-pbmc@meta.data$Clusters_0.5
 DimPlot(pbmc,reduction = "umap")
 ```

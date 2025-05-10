@@ -1,0 +1,381 @@
+---
+title: "TP - Partie 2"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    number-sections: true
+date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
+execute:
+  cache: true
+---
+
+```{r}
+# Les librairies
+
+library(Seurat)
+library(SeuratData)
+source("Cours/FunctionsAux.R")
+library(ggplot2)
+library(reshape2)
+
+```
+
+# Présentation et création de l'objet Seurat
+
+### Présentation des données
+
+- Les données `ifnb` disponibles dans seurat-data
+
+- Data : human PBMC from two conditions, interferon-stimulated and control cells (stored in the stim column in the object metadata). We will aim to integrate the two conditions together, so that we can jointly identify cell subpopulations across datasets, and then explore how each group differs across conditions
+
+### Objet Seurat depuis seurat data
+
+```{r}
+# devtools::install_github('satijalab/seurat-data')
+InstallData("ifnb")
+ifnb <- LoadData("ifnb")
+```
+
+```{r}
+Assays(ifnb)
+Layers(ifnb) 
+
+dim(ifnb)    
+table(ifnb$orig.ident)
+table(ifnb$stim)
+```
+
+Remarque :
+
+- Dans Seurat V5 : un seul objet Seurat contenant les deux conditions, organisé en plusieurs "layers"
+
+- Dans les versions antérieures: un objet Seurat par condition
+
+
+On splitte selon les deux conditions (counts.CTRL et counts.STIM)
+
+```{r}
+ifnb[["RNA"]] <- split(ifnb[["RNA"]], f = ifnb$stim)
+ifnb
+
+dim(ifnb[["RNA"]]$counts.CTRL)
+dim(ifnb[["RNA"]]$counts.STIM)
+```
+
+- Une anotation des cellules est stockée dans `meta.data$seurat_annotations` :
+
+```{r}
+head(ifnb@meta.data)
+```
+
+
+### Construction depuis les données de séquençage (Méthode 1 - `?ifnb`)
+
+- Pour la récupération des données de séquençage :
+
+```bash
+cd data/
+wget https://www.dropbox.com/s/79q6dttg8yl20zg/immune_alignment_expression_matrices.zip
+unzip immune_alignment_expression_matrices.zip
+rm immune_alignment_expression_matrices.zip
+```
+
+```{r}
+ctrl.data <- data.frame(data.table::fread('data/immune_control_expression_matrix.txt.gz',sep = "\t"),row.names=1)
+stim.data <- data.frame(data.table::fread('data/immune_stimulated_expression_matrix.txt.gz',sep = "\t"),row.names=1)
+ctrl <- Seurat::CreateSeuratObject(counts = ctrl.data, project = 'CTRL', min.cells = 5)
+ctrl$stim <- 'CTRL'
+ctrl <- subset(x = ctrl, subset = nFeature_RNA > 500)
+
+stim <- Seurat::CreateSeuratObject(counts = stim.data, project = 'STIM', min.cells = 5)
+stim$stim <- 'STIM'
+stim <- subset(x = stim, subset = nFeature_RNA > 500)
+
+ifnb2 <- merge(x = ctrl, y = stim)
+Seurat::Project(object = ifnb2) <- 'ifnb'
+
+annotations <- readRDS(file = system.file('extdata/annotations/annotations.Rds', package = 'ifnb.SeuratData'))
+ifnb2 <- Seurat::AddMetaData(object = ifnb2, metadata = annotations)
+```
+
+```{r}
+rm(ifnb2)
+```
+
+
+# Normalization, réduction de dimension et clustering
+
+### Normalisation
+
+- Fait la normalisation comme vu précédemment pour chaque matrice de counts 
+(counts.CTRL --> data.CTRL et counts.STIM--> data.STIM)
+
+
+```{r}
+ifnb <- NormalizeData(ifnb)
+
+ifnb@assays$RNA$data.CTRL[1:10,1:10]
+ifnb@assays$RNA$data.STIM[1:10,1:10]
+```
+
+### HVG 
+
+- HVG : il le fait pour chaque condition mais on a une répondre globale et un graphe global 
+  
+```{r}
+ifnb <- FindVariableFeatures(ifnb)
+
+head(VariableFeatures(ifnb,assay="RNA",layer="counts.CTRL"))
+head(VariableFeatures(ifnb,assay="RNA",layer="counts.STIM"))
+
+top10<-head(VariableFeatures(ifnb), 10)
+plot1<-VariableFeaturePlot(ifnb)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot2
+```
+
+### Réduction de dimension sans integration
+
+- Réduction de dimension sur la matrice des comptages normalisés (composée de deux blocs) centrés réduits
+
+```{r}
+ifnb <- ScaleData(ifnb)
+dim(ifnb@assays$RNA$scale.data)
+
+ifnb <- RunPCA(ifnb)
+
+ifnb <- FindNeighbors(ifnb, dims = 1:30, reduction = "pca")
+ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
+DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
+```
+
+# Integration des données 
+
+### Integration avec `CCA`
+
+- Utilisation de la fonction `IntegrateLayers()` avec la méthode CCA = Canonical Correlation Analysis
+
+```{r}
+ifnb_cca <- IntegrateLayers(object = ifnb, 
+                        method = CCAIntegration, 
+                        orig.reduction = "pca", 
+                        new.reduction = "integrated.cca",
+                        verbose = FALSE)
+# re-join layers after integration
+ifnb_cca[["RNA"]] <- JoinLayers(ifnb_cca[["RNA"]])
+```
+
+```{r}
+# Dimension reduction
+ifnb_cca <- FindNeighbors(ifnb_cca, 
+                      reduction = "integrated.cca", 
+                      dims = 1:30)
+ifnb_cca <- RunUMAP(ifnb_cca, 
+                dims = 1:30, 
+                reduction = "integrated.cca")
+```
+
+```{r}
+p1<-DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
+p2<-DimPlot(ifnb_cca, reduction = "umap", group.by = c("stim"))
+p1+p2
+```
+
+
+### Integration avec `Harmony`
+
+```{r}
+ifnb_h <- IntegrateLayers(object = ifnb, 
+                        method = HarmonyIntegration, 
+                        orig.reduction = "pca", 
+                        new.reduction = "integrated.harmony",
+                        verbose = FALSE)
+# re-join layers after integration
+ifnb_h[["RNA"]] <- JoinLayers(ifnb_h[["RNA"]])
+```
+
+```{r}
+# Dimension reduction
+ifnb_h <- FindNeighbors(ifnb_h, 
+                      reduction = "integrated.harmony", 
+                      dims = 1:30)
+ifnb_h <- RunUMAP(ifnb_h, 
+                dims = 1:30, 
+                reduction = "integrated.harmony")
+```
+
+```{r}
+p3<-DimPlot(ifnb_h, reduction = "umap", group.by = c("stim"))
+p1+p2+p3
+```
+
+Pour la suite, on poursuit avec l'intégration par CCA
+
+```{r}
+ifnb<-ifnb_cca
+rm(ifnb_h,ifnb_cca)
+```
+  
+  
+# Clustering 
+
+### Méthode de Louvain 
+
+- Clustering sur les données intégrées avec la résolution $r=0.5$
+
+```{r}
+ifnb <- FindClusters(ifnb, resolution = 0.5)
+EffPlot(ifnb,clustname = "seurat_clusters",resolution = 0.5)
+```
+
+```{r}
+# Visualization
+DimPlot(ifnb, 
+        reduction = "umap", 
+        group.by = c("stim", "seurat_clusters"))
+```
+
+```{r}
+DimPlot(ifnb, reduction = "umap", split.by = "stim")
+```
+
+
+```{r}
+Aux<-melt(table(Idents(ifnb),ifnb$stim))
+colnames(Aux)<-c("Cluster","Condition","len")
+ggplot(data=Aux, aes(x=Cluster, y=len, fill=Condition)) +
+  geom_bar(stat="identity", position=position_dodge())+
+  geom_text(aes(label=len), vjust=1.6, color="white",
+            position = position_dodge(0.9), size=3.5)+
+  theme_minimal()
+```
+
+### Annotation
+
+- Une annotation des cellules est disponible 
+
+```{r}
+table(ifnb$seurat_annotations)
+
+DimPlot(ifnb, 
+        reduction = "umap", 
+        group.by = c("seurat_annotations"))
+```
+
+- Comparaison avec le clustering obtenu
+
+```{r}
+table(Idents(ifnb),ifnb$seurat_annotations)
+```
+
+
+
+# Marker genes des types cellulaires conservés
+
+- Déterminer les gènes marqueurs des types cellulaires qui sont conservés entre les conditions
+
+- Utilisation de la fonction `FindConservedMarkers()`
+
+- Exemple : on se focalise sur le type cellulaire NK 
+
+```{r}
+Idents(ifnb) <- "seurat_annotations"
+NK.markers <- FindConservedMarkers(ifnb, 
+                                   ident.1 = "NK", 
+                                   grouping.var = "stim", 
+                                   verbose = FALSE)
+head(NK.markers)
+```
+
+```{r}
+Idents(ifnb) <- factor(Idents(ifnb), levels = c("pDC", "Eryth", "Mk", "DC", "CD14 Mono", "CD16 Mono",
+    "B Activated", "B", "CD8 T", "NK", "T activated", "CD4 Naive T", "CD4 Memory T"))
+
+markers.to.plot <- c("CD3D", "CREM", "HSPH1", "SELL", "GIMAP5", "CACYBP", "GNLY", "NKG7", "CCL5",
+    "CD8A", "MS4A1", "CD79A", "MIR155HG", "NME1", "FCGR3A", "VMO1", "CCL2", "S100A9", "HLA-DQA1",
+    "GPR183", "PPBP", "GNG11", "HBA2", "HBB", "TSPAN13", "IL3RA", "IGJ", "PRSS57")
+DotPlot(ifnb, features = markers.to.plot, cols = c("blue", "red"), dot.scale = 8, split.by = "stim") +
+    RotatedAxis()
+```
+
+# Identify differential expressed genes across conditions
+
+### Pseudo-bulk
+
+D'abord ajout d'informations pour avoir des "replicats"
+
+```{r}
+# load the inferred sample IDs of each cell
+ctrl <- read.table(url("https://raw.githubusercontent.com/yelabucsf/demuxlet_paper_code/master/fig3/ye1.ctrl.8.10.sm.best"), head = T, stringsAsFactors = F)
+stim <- read.table(url("https://raw.githubusercontent.com/yelabucsf/demuxlet_paper_code/master/fig3/ye2.stim.8.10.sm.best"), head = T, stringsAsFactors = F)
+info <- rbind(ctrl, stim)
+
+# rename the cell IDs by substituting the '-' into '.'
+info$BARCODE <- gsub(pattern = "\\-", replacement = "\\.", info$BARCODE)
+
+# only keep the cells with high-confidence sample ID
+info <- info[grep(pattern = "SNG", x = info$BEST), ]
+
+# remove cells with duplicated IDs in both ctrl and stim groups
+info <- info[!duplicated(info$BARCODE) & !duplicated(info$BARCODE, fromLast = T), ]
+
+# now add the sample IDs to ifnb 
+rownames(info) <- info$BARCODE
+info <- info[, c("BEST"), drop = F]
+names(info) <- c("donor_id")
+ifnb <- AddMetaData(ifnb, metadata = info)
+
+# remove cells without donor IDs
+ifnb$donor_id[is.na(ifnb$donor_id)] <- "unknown"
+ifnb <- subset(ifnb, subset = donor_id != "unknown")
+```
+
+
+Ici regroupement par condition (CTRL/STIM) et par types cellulaires (sens??) et donor ids 
+
+```{r}
+# pseudobulk
+pseudo_ifnb <- AggregateExpression(ifnb, 
+                                   assays = "RNA", 
+                                   return.seurat = T, 
+              group.by = c("stim", "donor_id", "seurat_annotations"))
+
+head(pseudo_ifnb)
+class(pseudo_ifnb)
+pseudo_ifnb@assays$RNA$counts[1:10,]
+```
+
+
+```{r}
+pseudo_ifnb$celltype.stim <- paste(pseudo_ifnb$seurat_annotations, pseudo_ifnb$stim, sep = "_")
+table(pseudo_ifnb$celltype.stim)
+Idents(pseudo_ifnb) <- "celltype.stim"
+table(Idents(pseudo_ifnb))
+```
+
+Utilisation de DESeq2 : 
+
+```{r}
+bulk.mono.de <- FindMarkers(object = pseudo_ifnb, 
+                         ident.1 = "CD14 Mono_STIM", 
+                         ident.2 = "CD14 Mono_CTRL",
+                         test.use = "DESeq2")
+head(bulk.mono.de, n = 10)
+ggplot(bulk.mono.de,aes(x=avg_log2FC,y=-log10(p_val_adj)))+geom_point()
+
+
+genetop<-bulk.mono.de %>%
+  filter(p_val_adj<0.01)%>%
+  arrange(abs(avg_log2FC))%>%
+  top_n(10)
+
+DoHeatmap(pseudo_ifnb[,which(Idents(pseudo_ifnb)%in%c("CD14 Mono_STIM", "CD14 Mono_CTRL"))],features=rownames(genetop),assay="RNA",slot="data")
+
+DotPlot(pseudo_ifnb,features=rownames(genetop),group.by = "celltype.stim")
+```
+
+
+Je ne suis pas convaincue des résultats ??!!
+

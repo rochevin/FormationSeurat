@@ -1468,14 +1468,22 @@ nk.markers <- FindConservedMarkers(ifnb,
 head(nk.markers)
 ```
 
-```{r}
-Idents(ifnb) <- factor(Idents(ifnb), levels = c("pDC", "Eryth", "Mk", "DC", "CD14 Mono", "CD16 Mono",
-    "B Activated", "B", "CD8 T", "NK", "T activated", "CD4 Naive T", "CD4 Memory T"))
+calcul FindMarkers pour la classe "NK" contre les autres seulement pour les cellules de STIM et celles de CTRL. 
+Puis, combine les pvaleurs selon une fonction du package metap. 
+(Fishers combined p-value or others from the metap package)).
+Par défaut dans la fonction FindConservedMarkers, meta.method = metap::minimump ---> Wilkinson's method 
+(wilkinsonp(p, r = 1, alpha, log.p))
 
-markers.to.plot <- c("CD3D", "CREM", "HSPH1", "SELL", "GIMAP5", "CACYBP", "GNLY", "NKG7", "CCL5",
-    "CD8A", "MS4A1", "CD79A", "MIR155HG", "NME1", "FCGR3A", "VMO1", "CCL2", "S100A9", "HLA-DQA1",
-    "GPR183", "PPBP", "GNG11", "HBA2", "HBB", "TSPAN13", "IL3RA", "IGJ", "PRSS57")
-DotPlot(ifnb, features = markers.to.plot, cols = c("blue", "red"), dot.scale = 8, split.by = "stim") +
+ref pour les méthodes de combinaison de pvaleurs
+https://cran.r-project.org/web/packages/metap/vignettes/compare.pdf
+
+
+```{r}
+NK.markers<-NK.markers%>%
+  arrange(minimump_p_val)
+
+DotPlot(ifnb, features = rownames(NK.markers)[1:10], 
+        cols = c("blue", "red"), dot.scale = 8, split.by = "stim") +
     RotatedAxis()
 ```
 

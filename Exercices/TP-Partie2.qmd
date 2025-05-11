@@ -20,6 +20,8 @@ source("Cours/FunctionsAux.R")
 library(ggplot2)
 library(reshape2)
 
+#devtools::install_github('immunogenomics/presto')
+
 ```
 
 # Présentation et création de l'objet Seurat
@@ -270,8 +272,6 @@ DimPlot(ifnb,
 table(Idents(ifnb),ifnb$seurat_annotations)
 ```
 
-
-
 # Marker genes des types cellulaires conservés
 
 - Déterminer les gènes marqueurs des types cellulaires qui sont conservés entre les conditions
@@ -290,17 +290,17 @@ head(NK.markers)
 ```
 
 ```{r}
-Idents(ifnb) <- factor(Idents(ifnb), levels = c("pDC", "Eryth", "Mk", "DC", "CD14 Mono", "CD16 Mono",
-    "B Activated", "B", "CD8 T", "NK", "T activated", "CD4 Naive T", "CD4 Memory T"))
+NK.markers<-NK.markers%>%
+  arrange(minimump_p_val)
 
-markers.to.plot <- c("CD3D", "CREM", "HSPH1", "SELL", "GIMAP5", "CACYBP", "GNLY", "NKG7", "CCL5",
-    "CD8A", "MS4A1", "CD79A", "MIR155HG", "NME1", "FCGR3A", "VMO1", "CCL2", "S100A9", "HLA-DQA1",
-    "GPR183", "PPBP", "GNG11", "HBA2", "HBB", "TSPAN13", "IL3RA", "IGJ", "PRSS57")
-DotPlot(ifnb, features = markers.to.plot, cols = c("blue", "red"), dot.scale = 8, split.by = "stim") +
+DotPlot(ifnb, features = rownames(NK.markers)[1:10], 
+        cols = c("blue", "red"), dot.scale = 8, split.by = "stim") +
     RotatedAxis()
 ```
 
-# Identify differential expressed genes across conditions
+# Analyse différentielle
+
+
 
 ### Pseudo-bulk
 

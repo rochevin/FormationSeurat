@@ -1461,11 +1461,11 @@ DimPlot(ifnb,
 
 ```{r}
 Idents(ifnb) <- "seurat_annotations"
-nk.markers <- FindConservedMarkers(ifnb, 
+NK.markers <- FindConservedMarkers(ifnb, 
                                    ident.1 = "NK", 
                                    grouping.var = "stim", 
                                    verbose = FALSE)
-head(nk.markers)
+head(NK.markers)
 ```
 
 calcul FindMarkers pour la classe "NK" contre les autres seulement pour les cellules de STIM et celles de CTRL. 
@@ -1624,15 +1624,14 @@ genetopDEseq1<-as.data.frame(resDEseq1) %>%
 ```
 
 ```{r}
-DotPlot(pseudo_ifnb1,features=rownames(genetopDEseq1)[1:10],group.by="stim")+
+DotPlot(ifnb,features=rownames(genetopDEseq1)[1:10],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-
 
 
 library(pheatmap)
 pheatmap(pseudo_ifnb1@assays$RNA$scale.data[rownames(genetopDEseq1),],
          cluster_cols = FALSE,       
-         scale = "row",              
+         scale = "column",              
          show_rownames = FALSE,
          show_colnames = TRUE)
 ```
@@ -1644,9 +1643,9 @@ Pour la question 1 :
 
 ```{r}
 library(nebula)
-ifnb_neb1<-scToNeb(obj=ifnb,assay="RNA",id="donor_id",pred=c("stim"))
-df1 = model.matrix(~stim, data=ifnb_neb$pred)
-data_g = group_cell(count=ifnb_neb$count,id=ifnb_neb$id,pred=df1) # il faut grouper les cellules par indiv avant de faire nebula
+ifnb_neb1<-scToNeb(obj=ifnb,assay="RNA",id="donor_id",pred=c("stim","seurat_annotations"))
+df1 = model.matrix(~stim+seurat_annotations, data=ifnb_neb1$pred)
+data_g = group_cell(count=ifnb_neb1$count,id=ifnb_neb1$id,pred=df1) # il faut grouper les cellules par indiv avant de faire nebula
 re1 = nebula(data_g$count,data_g$id,pred=data_g$pred)
 
 mean(p.adjust(re1$summary$p_stimSTIM,method="BH")<0.01)
@@ -1663,14 +1662,12 @@ head(ifnbNebSumm1)
 genetopNeb1<-ifnbNebSumm1%>%
    top_n(200)
 
-DotPlot(ifnb,features=genetopNeb1$gene[1:10],group.by="stim")+
+DotPlot(ifnb,features=genetopNeb1$gene[1:30],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-
-library(pheatmap)
 pheatmap(pseudo_ifnb1@assays$RNA$scale.data[genetopNeb1$gene,],
          cluster_cols = FALSE,       
-         scale = "row",              
+         scale = "column",              
          show_rownames = FALSE,
          show_colnames = TRUE)
 ```
@@ -1690,6 +1687,8 @@ Question 2 : déterminer les gènes dont l'expression varie entre les deux condi
 
 ```{r}
 # Question 2
+ICD14Mono<-which(ifnb$seurat_annotations=="CD14 Mono")
+
 Idents(ifnb)<-ifnb$celltype.stim
 res2_Wilcox <- FindMarkers(object = ifnb, 
                            ident.1 = "CD14 Mono_STIM", 
@@ -1704,10 +1703,14 @@ genetop_wilcox2<-res2_Wilcox %>%
    top_n(100)
 ```
 
+```{r}
+DotPlot(ifnb[,ICD14Mono],features=rownames(genetop_wilcox2)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
 
 ```{r}
 # pseudobulk
-pseudo_ifnb2 <- AggregateExpression(ifnb[,which(ifnb$seurat_annotations=="CD14 Mono")], 
+pseudo_ifnb2 <- AggregateExpression(ifnb[,ICD14Mono], 
                                    assays = "RNA", 
                                    return.seurat = T, 
                                    group.by = c("stim", "donor_id", "seurat_annotations"))
@@ -1734,11 +1737,9 @@ genetopDEseq2<-as.data.frame(resDEseq2) %>%
 DotPlot(pseudo_ifnb2,features=rownames(genetopDEseq2)[1:10],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-
-library(pheatmap)
 pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopDEseq2),],
          cluster_cols = FALSE,       
-         scale = "row",              
+         scale = "column",              
          show_rownames = FALSE,
          show_colnames = TRUE)
 ```
@@ -1748,7 +1749,7 @@ pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopDEseq2),],
 ```{r}
 # Nebula
 Idents(ifnb)<-ifnb$seurat_annotations
-ifnb_neb2<-scToNeb(obj=ifnb[,which(Idents(ifnb)=="CD14 Mono")],assay="RNA",id="donor_id",pred=c("stim"))
+ifnb_neb2<-scToNeb(obj=ifnb[,ICD14Mono],assay="RNA",id="donor_id",pred=c("stim"))
 df2 = model.matrix(~stim, data=ifnb_neb2$pred)
 data_g2 = group_cell(count=ifnb_neb2$count,id=ifnb_neb2$id,pred=df2) # il faut grouper les cellules par indiv avant de faire nebula
 re2 = nebula(data_g2$count,data_g2$id,pred=data_g2$pred)
@@ -1779,15 +1780,10 @@ pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
          show_colnames = TRUE)
 ```
 
-##### Comparaison
-
-```{r}
-library(ggvenn)
-ggvenn(list(DEseq2=rownames(genetopDEseq2),Nebula=genetopNeb2$gene,Wilcox=rownames(genetop_wilcox2)))
-```
 
 
-#### Par une approche supervisée (ex: Random Forest)
+
+##### Par une approche supervisée (ex: Random Forest)
 
 
 ```{r}
@@ -1797,15 +1793,39 @@ library(caret)
 #SeuratObject@meta.data$TreatGenotype<-paste0(SeuratObject$Treatment,"-",SeuratObject$Genotype)
 #IBanq1<-which(SeuratObject@meta.data$Banque=="Bq1")
 
-#I<-which(ifnb$seurat_annotations=="CD14 Mono")
-#datatrain<-t(as.matrix(ifnb@assays$integrated$scale.data[,I]))
-#dataRF<-data.frame(datatrain,
-#                   Cl = as.factor(ifnb$stim[I]))
-#resRF<-randomForest(Cl ~ ., data = dataRF,importance=T,proximity=T)
-#varImpPlot(resRF)
-#table(resRF$predicted,dataRF$Cl)
+
+datatrain<-t(as.matrix(ifnb@assays$RNA$scale.data[,ICD14Mono]))
+dataRF<-data.frame(datatrain,
+                   Cl = as.factor(ifnb$stim[ICD14Mono]))
+resRF<-randomForest(Cl ~ ., data = dataRF,importance=T,proximity=T)
+varImpPlot(resRF)
+table(resRF$predicted,dataRF$Cl)
+
+
+genetopRF2<-as.data.frame(resRF$importance)%>%
+      arrange(desc(MeanDecreaseAccuracy))%>%
+      top_n(100)
 ```
 
+```{r}
+DotPlot(ifnb,features=rownames(genetopRF2)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+#library(pheatmap)
+#pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopRF2),],
+#         cluster_cols = FALSE,       
+#         scale = "row",              
+#         show_rownames = FALSE,
+#         show_colnames = TRUE)
+```
+
+##### Comparaison
+
+```{r}
+library(ggvenn)
+ggvenn(list(DEseq2=rownames(genetopDEseq2),Nebula=genetopNeb2$gene,Wilcox=rownames(genetop_wilcox2),RF=rownames(genetopRF2)))
+```
 
 
 

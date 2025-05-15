@@ -19,6 +19,7 @@ library(SeuratData)
 source("Cours/FunctionsAux.R")
 library(ggplot2)
 library(reshape2)
+library(tidyverse)
 
 #devtools::install_github('immunogenomics/presto')
 

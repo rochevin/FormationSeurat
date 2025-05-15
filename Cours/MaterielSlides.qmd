@@ -2041,6 +2041,71 @@ https://github.com/cellgeni/sceasy
 https://www.youtube.com/watch?v=como93CmnS8
 
 
+- From Seurat to AnnData via h5Seurat
+
+```{r}
+# NE FONCTIONNE PAS - CMR
+
+#library(SeuratDisk)
+#class(pbmc)
+#SaveH5Seurat(pbmc, filename = "pbmc.h5Seurat")
+#Convert("pbmc.h5Seurat", dest = "h5ad")
+```
+
+> You can write out the Seurat object to an .h5ad file using the write_h5ad function:
+
+```{r}
+#write_h5ad(pbmc, "pbmc.h5ad")
+```
+
+>If you need more customized conversion, you first need to convert the Seurat object to an AnnData object. Again note that there is no one-to-one mapping possible between the AnnData and SeuratObject data structures, so some information might be lost during conversion. It is recommended to carefully inspect the converted object to ensure that all necessary information has been transferred.
+
+>See ?as_AnnData for more details on how to customize the conversion process. Example:
+
+```{r}
+#library(anndataR)
+#as_AnnData(
+#  pbmc,
+#  assay_name = "RNA",
+#  x_mapping = "data",
+#  layers_mapping = c(foo = "counts")
+#)
+```
+
+
+- From Scanpy to Seurat
+
+```{r}
+#library(anndataR)
+#library(Seurat)
+
+#h5ad_file <- system.file("extdata", "example.h5ad", package = "anndataR")
+```
+
+>Read the .h5ad file and convert it to a Seurat object:
+
+```{r}
+#seurat_obj <- read_h5ad(h5ad_file, as = "Seurat")
+#seurat_obj
+```
+
+>Note that there is no one-to-one mapping possible between the AnnData and SeuratObject data structures, so some information might be lost during conversion. It is recommended to carefully inspect the converted object to ensure that all necessary information has been transferred.
+
+>See ?as_Seurat for more details on how to customize the conversion process. For instance:
+
+```{r}
+#adata$as_Seurat(
+#  assay_name = "ADT",
+#  layers_mapping = c(counts = "dense_counts", data = "dense_X")
+#)
+```
+
+- From Seurat to SingleCellExperiment (sce)
+
+
+
+
+
 ### Appendix
 
 - Commandes Seurat : https://satijalab.org/seurat/articles/essential_commands

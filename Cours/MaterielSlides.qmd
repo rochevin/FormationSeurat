@@ -1542,9 +1542,6 @@ ifnb <- subset(ifnb, subset = donor_id != "unknown")
 table(ifnb$donor_id)
 ```
 
-Question 1:  déterminer les gènes dont l'expression varie entre les deux conditions (types cellulaires confondus)
-Question 2 : déterminer les gènes dont l'expression varie entre les deux conditions pour le type cellulaire "CD14 Mono" fixé.
-
 Pour la suite, création d'une colonne Condition_TypeCellulaire
 
 ```{r}
@@ -1554,31 +1551,35 @@ table(ifnb$celltype.stim)
 
 
 
+#### Question 1
 
-#### Par méthode naive (Wilcoxon)
+Question 1:  déterminer les gènes dont l'expression varie entre les deux conditions (types cellulaires confondus)
+
+
+##### Par méthode naive (Wilcoxon)
 
 ```{r}
-# Question 1
-
 Idents(ifnb)<-ifnb$stim
 res1_Wilcox <- FindMarkers(object = ifnb, 
                            ident.1 = "STIM", 
                            ident.2 = "CTRL",
                            test.use = "wilcox")
 
+mean(res1_Wilcox$p_val_adj<0.01)
 
-# Question 2
-Idents(ifnb)<-ifnb$celltype.stim
-res2_Wilcox <- FindMarkers(object = ifnb, 
-                           ident.1 = "CD14 Mono_STIM", 
-                           ident.2 = "CD14 Mono_CTRL",
-                           test.use = "wilcox")
+genetop_wilcox1<-res1_Wilcox %>%
+   filter(p_val_adj<0.01)%>%
+   arrange(desc(abs(avg_log2FC)))%>%
+   top_n(100)
+```
 
-## A exploiter
+```{r}
+DotPlot(ifnb,features=rownames(genetop_wilcox1)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
 
-#### Par pseudo-bulk (DESeq2)
+##### Par pseudo-bulk (DESeq2)
 
 ```{r}
 # Question 1 : on regroupe par conditions et donor_id pour la création du pseudoBulk
@@ -1615,8 +1616,94 @@ resDEseq1<-results(dds1,name="stim_STIM_vs_CTRL")
 length(which(resDEseq1$padj<0.01)) / nrow(resDEseq1)
 ```
 
+```{r}
+genetopDEseq1<-as.data.frame(resDEseq1) %>%
+   filter(padj<0.01)%>%
+   arrange(desc(abs(log2FoldChange)))%>%
+   top_n(200)
+```
 
-Pour la question 2: 
+```{r}
+DotPlot(pseudo_ifnb1,features=rownames(genetopDEseq1)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+
+library(pheatmap)
+pheatmap(pseudo_ifnb1@assays$RNA$scale.data[rownames(genetopDEseq1),],
+         cluster_cols = FALSE,       
+         scale = "row",              
+         show_rownames = FALSE,
+         show_colnames = TRUE)
+```
+
+
+##### Par une méthode spécifique single-cell (ex: NEBULA)
+
+Pour la question 1 :
+
+```{r}
+library(nebula)
+ifnb_neb1<-scToNeb(obj=ifnb,assay="RNA",id="donor_id",pred=c("stim"))
+df1 = model.matrix(~stim, data=ifnb_neb$pred)
+data_g = group_cell(count=ifnb_neb$count,id=ifnb_neb$id,pred=df1) # il faut grouper les cellules par indiv avant de faire nebula
+re1 = nebula(data_g$count,data_g$id,pred=data_g$pred)
+
+mean(p.adjust(re1$summary$p_stimSTIM,method="BH")<0.01)
+
+ifnbNebSumm1<-re1$summary
+ifnbNebSumm1$padjStim<-p.adjust(re1$summary$p_stimSTIM,method="BH")
+ifnbNebSumm1<-ifnbNebSumm1%>%
+            filter(padjStim <0.01)%>%
+            arrange(desc(abs(logFC_stimSTIM)))  
+head(ifnbNebSumm1)
+```
+
+```{r}
+genetopNeb1<-ifnbNebSumm1%>%
+   top_n(200)
+
+DotPlot(ifnb,features=genetopNeb1$gene[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+library(pheatmap)
+pheatmap(pseudo_ifnb1@assays$RNA$scale.data[genetopNeb1$gene,],
+         cluster_cols = FALSE,       
+         scale = "row",              
+         show_rownames = FALSE,
+         show_colnames = TRUE)
+```
+
+##### Comparaison
+
+```{r}
+library(ggvenn)
+ggvenn(list(DEseq2=rownames(genetopDEseq1),Nebula=genetopNeb1$gene,Wilcox=rownames(genetop_wilcox1)))
+```
+
+
+#### Question 2
+
+Question 2 : déterminer les gènes dont l'expression varie entre les deux conditions pour le type cellulaire "CD14 Mono" fixé.
+
+
+```{r}
+# Question 2
+Idents(ifnb)<-ifnb$celltype.stim
+res2_Wilcox <- FindMarkers(object = ifnb, 
+                           ident.1 = "CD14 Mono_STIM", 
+                           ident.2 = "CD14 Mono_CTRL",
+                           test.use = "wilcox")
+
+mean(res2_Wilcox$p_val_adj<0.01)
+
+genetop_wilcox2<-res2_Wilcox %>%
+   filter(p_val_adj<0.01)%>%
+   arrange(desc(abs(avg_log2FC)))%>%
+   top_n(100)
+```
+
 
 ```{r}
 # pseudobulk
@@ -1625,11 +1712,6 @@ pseudo_ifnb2 <- AggregateExpression(ifnb[,which(ifnb$seurat_annotations=="CD14 M
                                    return.seurat = T, 
                                    group.by = c("stim", "donor_id", "seurat_annotations"))
 
-head(pseudo_ifnb2)
-```
-
-```{r}
-library(DESeq2)
 cts2<-as.matrix(pseudo_ifnb2@assays$RNA$counts)
 coldata2<-pseudo_ifnb2@meta.data
 dds2 <- DESeqDataSetFromMatrix(countData = cts2,
@@ -1644,59 +1726,87 @@ length(which(resDEseq2$padj<0.01)) / nrow(resDEseq2)
 
 
 ```{r}
-#pseudo_ifnb2$celltype.stim <- paste(pseudo_ifnb2$seurat_annotations, pseudo_ifnb2$stim, sep = "_")
-#table(pseudo_ifnb$celltype.stim)
-#Idents(pseudo_ifnb) <- "celltype.stim"
-#table(Idents(pseudo_ifnb))
-```
-```{r}
-#bulk.mono.de <- FindMarkers(object = pseudo_ifnb, 
-#                         ident.1 = "CD14 Mono_STIM", 
-#                         ident.2 = "CD14 Mono_CTRL",
-#                         test.use = "DESeq2")
-#head(bulk.mono.de, n = 10)
-#ggplot(bulk.mono.de,aes(x=avg_log2FC,y=-log10(p_val_adj)))+geom_point()
+genetopDEseq2<-as.data.frame(resDEseq2) %>%
+   filter(padj<0.01)%>%
+   arrange(desc(abs(log2FoldChange)))%>%
+   top_n(100)
+
+DotPlot(pseudo_ifnb2,features=rownames(genetopDEseq2)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 
-#genetop<-bulk.mono.de %>%
-#  filter(p_val_adj<0.01)%>%
-#  arrange(abs(avg_log2FC))%>%
-#  top_n(10)
-
-#DoHeatmap(pseudo_ifnb[,which(Idents(pseudo_ifnb)%in%c("CD14 Mono_STIM", "CD14 Mono_CTRL"))],features=rownames(genetop),assay="RNA",slot="data")
-
-#DotPlot(pseudo_ifnb,features=rownames(genetop),group.by = "celltype.stim")
+library(pheatmap)
+pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopDEseq2),],
+         cluster_cols = FALSE,       
+         scale = "row",              
+         show_rownames = FALSE,
+         show_colnames = TRUE)
 ```
 
 
-#### Par une méthode spécifique single-cell (ex: NEBULA)
 
 ```{r}
-library(nebula)
-#ifnb_neb<-scToNeb(obj=ifnb,assay="RNA",id="donor_id",pred=c("stim"))
-#df1 = model.matrix(~stim, data=ifnb_neb$pred)
-#re=nebula(ifnb_neb$count,id=ifnb_neb$id,pred=df1)
+# Nebula
+Idents(ifnb)<-ifnb$seurat_annotations
+ifnb_neb2<-scToNeb(obj=ifnb[,which(Idents(ifnb)=="CD14 Mono")],assay="RNA",id="donor_id",pred=c("stim"))
+df2 = model.matrix(~stim, data=ifnb_neb2$pred)
+data_g2 = group_cell(count=ifnb_neb2$count,id=ifnb_neb2$id,pred=df2) # il faut grouper les cellules par indiv avant de faire nebula
+re2 = nebula(data_g2$count,data_g2$id,pred=data_g2$pred)
+
+mean(p.adjust(re2$summary$p_stimSTIM,method="BH")<0.01)
+
+ifnbNebSumm2<-re2$summary
+ifnbNebSumm2$padjStim<-p.adjust(re2$summary$p_stimSTIM,method="BH")
+ifnbNebSumm2<-ifnbNebSumm2%>%
+            filter(padjStim <0.01)%>%
+            arrange(desc(abs(logFC_stimSTIM)))  
+head(ifnbNebSumm2)
 ```
 
 ```{r}
-#mean(p.adjust(re$summary$`p_TreatmentNF:GenotypeWT`,method="BH")<0.01)
-#mean(p.adjust(re$summary$`p_TreatmentNF`,method="BH")<0.01)
-#mean(p.adjust(re$summary$`p_GenotypeWT`,method="BH")<0.01)
-#mean(p.adjust(re$summary$`p_Replicate2`,method="BH")<0.01)
+genetopNeb2<-ifnbNebSumm2%>%
+   top_n(100)
+
+DotPlot(ifnb,features=genetopNeb2$gene[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+library(pheatmap)
+pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
+         cluster_cols = FALSE,       
+         scale = "row",              
+         show_rownames = FALSE,
+         show_colnames = TRUE)
 ```
 
+##### Comparaison
 
 ```{r}
-#NebulaSumm<-re$summary
-#NebulaSumm[,"padj_Inter"]<-p.adjust(NebulaSumm$`p_TreatmentNF:GenotypeWT`,method="BH")
-#NebulaSumm[,"abslogFCInter"]<-abs(NebulaSumm$`logFC_TreatmentNF:GenotypeWT`)
-#SelectNebulaInter<-NebulaSumm %>%
-#  filter(padj_Inter <0.01 & abslogFCInter>1)%>%
-#  arrange(desc(abslogFCInter))
+library(ggvenn)
+ggvenn(list(DEseq2=rownames(genetopDEseq2),Nebula=genetopNeb2$gene,Wilcox=rownames(genetop_wilcox2)))
 ```
 
 
 #### Par une approche supervisée (ex: Random Forest)
+
+
+```{r}
+library(randomForest)
+library(caret)
+
+#SeuratObject@meta.data$TreatGenotype<-paste0(SeuratObject$Treatment,"-",SeuratObject$Genotype)
+#IBanq1<-which(SeuratObject@meta.data$Banque=="Bq1")
+
+#I<-which(ifnb$seurat_annotations=="CD14 Mono")
+#datatrain<-t(as.matrix(ifnb@assays$integrated$scale.data[,I]))
+#dataRF<-data.frame(datatrain,
+#                   Cl = as.factor(ifnb$stim[I]))
+#resRF<-randomForest(Cl ~ ., data = dataRF,importance=T,proximity=T)
+#varImpPlot(resRF)
+#table(resRF$predicted,dataRF$Cl)
+```
+
+
 
 
 # Pour aller plus loin

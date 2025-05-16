@@ -1827,7 +1827,513 @@ library(ggvenn)
 ggvenn(list(DEseq2=rownames(genetopDEseq2),Nebula=genetopNeb2$gene,Wilcox=rownames(genetop_wilcox2),RF=rownames(genetopRF2)))
 ```
 
+## Gene functional analysis
 
+
+In functional analysis of biological pathway, the biologist is __always__ the expert :
+
+* The pathway database is determinent.
+* You decide the relationship and biological significance of the data you want to present.
+
+
+Gene enrichment analysis identifies __biological pathways__ or __functions__ that are __overrepresented__ in a set of genes of interest.
+
+### Why ?
+
+The interpretation of the list of differentially expressed genes can be challenging due to two scenarios:
+
+1.  The list is so long that it becomes cumbersome and time-consuming to analyze and interpret each gene individually.
+
+2.  Some genes may have low p-values but not low enough to meet the given threshold for significance.
+
+
+**In such situations, enrichment analysis can be employed to enhance the understanding of our dataset.**
+
+
+### Approaches
+
+
+
+1.  **Over Representation Analysis (ORA)**: This method determines whether the differentially expressed genes are enriched in specific pathways or ontological groups. It assesses whether the observed number of genes in a particular pathway or gene ontology term is higher than what would be expected by chance.
+
+2.  **Gene Set Enrichment Analysis (GSEA)**: GSEA evaluates whether a pre-defined set of genes (gene set) shows statistically significant differences between two or more biological conditions. Instead of focusing on individual genes, GSEA considers the collective behavior of genes within a gene set to identify enriched biological pathways or functional categories.
+  
+
+
+### From (Gene) Symbols to (Gene) IDs
+
+Working with gene IDs, such as `Ensembl IDs`, instead of gene symbols is important for reproducibility in gene enrichment analysis due to the following reasons:
+
+1.  **Gene Symbol Ambiguity:** Gene symbols can be ambiguous, as multiple genes can have the same symbol. This can lead to confusion and errors when performing analyses, especially when using external databases or tools.
+
+2.  **Uniqueness:** Gene IDs are unique identifiers assigned to specific genes. They provide a standardized and consistent way of referring to genes across different datasets and analyses, ensuring accuracy and reproducibility.
+
+3.  **Consistent Annotation:** Gene IDs are linked to comprehensive and up-to-date gene annotation databases, such as Ensembl. These databases provide detailed information about gene features, genomic locations, functional annotations, and other relevant metadata.
+
+4.  **Cross-Species Comparisons:** Gene IDs enable seamless comparisons of gene enrichment results across different species.
+
+5.  **Data Integration:** Gene IDs facilitate data integration across multiple experiments or studies. They enable the merging of different datasets, such as gene expression data or functional annotations, based on a common identifier.
+
+6.  **Long-term Accessibility:** Gene IDs are stable and persist over time.
+
+Using Gene IDs: enhances reproducibility in gene enrichment analysis by providing unique and standardized gene identifiers, enabling consistent annotation, supporting cross-species comparisons, facilitating data integration, and ensuring long-term accessibility of results.
+
+### `bitr`: Biological Id TranslatoR
+
+```{r}
+eg = bitr(rownames(genetop_wilcox1), fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
+eg  |> as_tibble()  |>  rmarkdown::paged_table()
+```
+
+### Ensembl BioMart
+
+BioMart provides a flexible and intuitive interface to explore and retrieve genomic data from Ensembl. It allows you to filter and select specific data attributes, enabling you to extract the information that is most relevant to your research or analysis.
+
+1.  **Accessing BioMart**: Go to the Ensembl website (<https://www.ensembl.org>) and click on the "BioMart" option in the menu to access the BioMart interface.
+
+2.  **Choosing a Dataset**: In the BioMart interface, you will see several tabs. Start by selecting the "CHOOSE DATABASE" tab. Here, you can choose the dataset you want to retrieve data from, such as the Ensembl genes, variation, or sequence databases.
+
+3.  **Selecting Filters**: Once you've chosen the dataset, click on the "CHOOSE FILTERS" tab. Here, you can specify criteria to filter the data you are interested in. For example, you can filter by gene ID, chromosome location, gene biotype, or other attributes.
+
+4.  **Selecting Attributes**: After setting your filters, switch to the "CHOOSE ATTRIBUTES" tab. Here, you can select the specific attributes or data fields you want to retrieve for the filtered data. These attributes can include gene names, chromosomal coordinates, functional annotations, or any other available information.
+
+5.  **Retrieving Results**: Once you have chosen the desired attributes, switch to the "RESULTS" tab. Click on the "Results" button to retrieve the data based on your chosen filters and attributes. The results will be displayed in a table format.
+
+
+Ensembl Biomart have an R api called `bioMart`:
+```{r}
+require(biomaRt)
+listMarts()
+```
+```{r}
+mart <- biomaRt::useMart(biomart="ENSEMBL_MART_ENSEMBL")
+listEnsembl(mart=mart)
+```
+
+Check datasets availables
+
+```{r,echo=T}
+ensembl <- useEnsembl(biomart = "ensembl",version =114)
+datasets <- listDatasets(ensembl)
+datasets %>% as_tibble() %>% rmarkdown::paged_table()
+```
+
+
+
+### Now we can ask for the same thing but with `R` :
+
+```{r}
+ensembl <- useDataset(dataset = "hsapiens_gene_ensembl", mart = ensembl)
+```
+
+### If the dataset is known in advance:
+
+```{r,eval=F}
+ensembl <- useEnsembl(biomart = "ensembl", dataset = "hsapiens_gene_ensembl",version =114)
+```
+
+
+### Query in `biomaRt`
+
+The `getBM()` function is the primary query function in biomaRt.
+
+It has four main arguments:
+
+-   `attributes`: is a vector of attributes that one wants to retrieve (= the output of the query).
+-   `filters`: is a vector of filters that one wil use as input to the query.
+-   `values`: a vector of values for the filters. In case multple filters are in use, the values argument requires a list of values where each position in the list corresponds to the position of the filters in the filters argument (see examples below).
+-   `mart`: is an object of class Mart, which is created by the useEnsembl() function.
+
+
+```{r}
+filters = listFilters(ensembl)
+filters  %>% as_tibble() %>% rmarkdown::paged_table()
+```
+
+```{r}
+attributes = listAttributes(ensembl)
+attributes %>% as_tibble() %>% rmarkdown::paged_table()
+```
+
+
+```{r}
+
+gene_conversion <- getBM(attributes = c("ensembl_gene_id","entrezgene_id","hgnc_symbol"),
+      filters = "hgnc_symbol",
+      values = rownames(genetop_wilcox1), 
+      mart = ensembl)
+gene_conversion %>% as_tibble() %>% rmarkdown::paged_table()
+```
+
+### AnnotationHub
+
+#### Get proper annotation for `AnnotationHub` using `BiocHubsShiny`:
+
+The `BiocHubsShiny` package allows users to visually explore the `AnnotationHub` and `ExperimentHub` resources via shiny. It provides a tabular display of the available resources with the ability to filter and search through the column fields.[^1]
+
+[^1]: From `BiocHubsShiny` vignette : https://bioconductor.org/packages/release/bioc/vignettes/BiocHubsShiny/inst/doc/BiocHubsShiny.html
+
+```{r,eval=FALSE,echo=T}
+BiocHubsShiny::BiocHubsShiny()
+
+library("AnnotationHub")
+hub <- AnnotationHub()
+
+## Select rows in the table
+
+ens.db <- hub[['AH119325']]
+```
+
+Query ens.db
+
+```{r,eval=FALSE,}
+select(ens.db, keys=rownames(genetop_wilcox1),columns=c("SYMBOL", "GENEID","ENTREZID","GENENAME","GENEBIOTYPE"),keytype = "GENENAME")
+```
+
+
+### Common sources of feature sets
+
+1. **Gene Ontology (GO)**
+2. **KEGG (Kyoto Encyclopedia of Genes and Genomes)**:
+3. **WikiPathways**
+4. **Disease Ontology**
+5. **Reactome**
+6. **Molecular Signatures Database (MSigDB)**
+7. **Medical Subject Headings (MeSH)**
+
+These pathway collections databases serve as valuable resources for researchers to explore and analyze biological pathways, functional annotations, and disease associations. They facilitate the interpretation of gene expression data, identify key pathways related to specific biological processes or diseases, and contribute to a deeper understanding of biological systems.
+
+
+### **Gene Ontology (GO)**
+
+::: {style="font-size: 18px;"}
+
+### Website: <http://geneontology.org/>
+
+### Description: 
+GO is a widely used database that categorizes genes into three main ontologies: molecular function, biological process, and cellular component. It provides a standardized vocabulary to describe gene functions and interactions, allowing researchers to annotate and analyze gene sets in a structured manner.
+
+
+1. **Molecular Function**
+   - Describes the elemental activities of a gene product at the molecular level.
+2. **Biological Process**
+   - Represents sets of molecular events or biological pathways achieved by one or more gene products.
+   - Biological process terms describe the larger, coordinated series of events that involve multiple molecular functions.
+3. **Cellular Component**
+   - Refers to the subcellular structures, locations, and macromolecular complexes in which gene products are active.
+   - Cellular component terms describe the physical compartments or structures where gene products function.
+
+
+:::{.callout-tip}
+* [Ten Quick Tips for Using the Gene Ontology](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1003343)
+:::
+
+:::
+
+
+
+### Over Representation analysis
+
+Over Representation Analysis (ORA) is a widely used approach to determine whether known biological functions or processes are over-represented (= enriched) in an experimentally-derived gene list, e.g. a list of differentially expressed genes (DEGs).
+
+![From bioinformatics-core-shared-training.github.io/Bulk_RNAseq_Course_Apr22](images/genesetoverlap.svg){fig-align="center"}
+
+### Over Representation analysis
+
+![From bioinformatics-core-shared-training.github.io/Bulk_RNAseq_Course_Apr22](images/contingency.png){fig-align="center" width="400" height="300"}
+
+### Fisher Exact Test
+
+-   The Fisher Exact Test is a statistical method used to determine whether there is a significant association between two categorical variables, such as the presence or absence of a particular gene and a particular phenotype or disease.
+-   In the context of gene enrichment analysis, the Fisher Exact Test is used to determine whether there is a significant association between a set of genes and a particular biological pathway or process.
+
+Hypothesis: 
+
+* $H_0$: The categories are independent.
+* $H_1$: The categories are dependent.
+
+> In Gene Enrichment, we want to see as genes as possible in the pathway that are DE, so we want a one sided test with greater hypothesis.
+
+
+
+
+### Fisher Exact Test
+
+The p-value can be calculated by hypergeometric distribution[^1]: 
+
+$$
+p = 1 - \displaystyle\sum_{i = 0}^{k-1}\frac{{M \choose i}{{N-M} \choose {n-i}}} {{N \choose n}}
+$$
+
+* $N$ is the total number of genes in the background distribution
+* $M$ is the number of genes within that distribution that are annotated (either directly or indirectly) to the gene set of interest
+* $n$ is the size of the list of genes of interest
+* $k$ is the number of genes within that list which are annotated to the gene set. 
+
+![From Wieder et al. (https://doi.org/10.1371/journal.pcbi.1009105)](images/ora.PNG){fig-align="center" width="250" height="250"}
+
+
+[^1]: In case of alternative hypothesis as `greater`.
+
+### Fisher Exact Test
+
+#### With an (false) example
+
+![From https://www.pathwaycommons.org/guide/primers/statistics/fishers_exact_test/](images/table_1.png){fig-align="center" width="400" height="300"}
+
+### Fisher Exact Test
+
+#### With an (false) example
+
+![From https://www.pathwaycommons.org/guide/primers/statistics/fishers_exact_test/](images/figure_1.png){fig-align="center"}
+
+
+
+### Fisher Exact Test
+
+#### With an (false) example
+
+![From https://www.pathwaycommons.org/guide/primers/statistics/fishers_exact_test/](images/table_2.png){fig-align="center" width="400" height="300"}
+
+### Fisher Exact Test
+
+#### Using the Hypergeometric distribution
+
+$$
+\begin{equation*}
+  \begin{split}
+    \frac{(\text{15 Choose 1})\cdot(\text{15 Choose 14})}{(\text{30 Choose 15})}& = \frac{15\cdot15}{155 117 520}\\
+    & = 1.45\cdot10^{-6}
+  \end{split}
+\end{equation*}
+$$
+
+### Fisher Exact Test
+
+#### With an (false) example
+
+![From https://www.pathwaycommons.org/guide/primers/statistics/fishers_exact_test/](images/figure_3.png){fig-align="center"}
+
+
+
+### Fisher Exact Test
+
+#### Solution
+
+$$
+\begin{equation*}
+  \begin{split}
+    p& = \sum\limits_{\text{DE & IN}\geq12}p_i\\
+     & = 1.33\cdot10^{-3}+7.11\cdot10^{-5}+1.45\cdot10^{-6}+6.45\cdot10^{-9}\\
+     & = 0.001407159\\
+     & \simeq 0.0014
+  \end{split}
+\end{equation*}
+$$
+
+### Fisher Exact Test
+
+#### With a real dataset 
+
+
+
+```{r, warning=FALSE,message=FALSE}
+require(clusterProfiler)
+require(gt)
+require(org.Hs.eg.db)
+# eg = bitr(rownames(genetop_wilcox1), fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
+# go_enrichment <- enrichGO(eg$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db, keyType = "ENTREZID", ont = "BP")
+# saveRDS(go_enrichment,"data/go_enrichment.rds")
+go_enrichment <- readRDS("data/go_enrichment.rds")
+go_enrichment <- setReadable(go_enrichment, OrgDb = org.Hs.eg.db, keyType="ENSEMBL")
+my_go <- "GO:0071901"
+my_go <- go_enrichment %>% as_tibble() %>% arrange(desc(p.adjust)) %>% dplyr::filter(ID == my_go)
+
+k = 5
+M = 86 
+N = 18986
+n = 83
+
+
+d <- data.frame(gene.in.interest=c(k,n-k),gene.not.interest=c(M-k,N-M-n+k))
+row.names(d) <- c("In_category", "not_in_category")
+
+mytable <- d
+mytable <- rbind(mytable,colSums(d))
+mytable <- cbind(mytable,rowSums(mytable))
+colnames(mytable) <- c("Of_interest_yes", "Of_interest_no","Total")
+rownames(mytable) <- c("in_pathway_yes","in_pathway_no","Total")
+
+desired_colnames <- colnames(mytable) |> 
+  str_remove('Of_interest_') |> 
+  str_to_title()
+names(desired_colnames) <- colnames(mytable)
+
+
+options(scipen=999)
+
+```
+
+For a gene set `r my_go$Description` (`r my_go$ID`), I have :
+
+* `r N` ($N$) number of genes in the analysis (background distribution).
+* `r M` ($M$) genes within that distribution that are in the pathway of interest $C$.
+* `r n` ($n$) genes of interest ($S$).
+* `r k` ($k$) genes that are in $S$ and $C$.
+
+And we can draw this contingency table:
+
+```{r echo=FALSE, warning=FALSE,message=FALSE}
+options(scipen=0)
+mytable %>% tibble::rownames_to_column("Pathway") %>% mutate(Pathway = glue::glue("**Pathway of interest**: {str_extract(Pathway,'yes|no|Total')}")) %>%  gt(rowname_col = "Pathway") %>% cols_label(.list = desired_colnames) |> 
+  tab_spanner(
+    label = md('**Genes of interest**'),
+    columns = 1:2
+  ) %>%  fmt_markdown(columns = everything()) %>% 
+  tab_header(
+    title = glue::glue("Contingency table: DE genes against {my_go$Description} ({my_go$ID})")
+  )
+```
+
+
+
+
+### Tests with `R`
+
+#### Using Hypergeometric distribution
+
+
+```{r}
+all_probas <- dhyper(0:M, M, N-M, n,log=F)
+```
+
+
+```{r,echo=F}
+p1 <- enframe(all_probas) %>% ggplot(aes(x=name,y=value)) + geom_line() + labs(y="probability",x="k",title = "Probability of observing our table giving k") + geom_vline(xintercept = 5,linetype='dashed',col="red")
+print(p1)
+```
+
+
+### Tests with `R`
+
+#### Using Hypergeometric distribution
+#### Summing all probability having $k=32$ or more : 
+```{r}
+dhyper(k:M, M, N-M, n,log=F) %>% sum()
+```
+
+
+#### Using the distribution function directly
+
+```{r}
+phyper(k-1, M, N-M, n,lower.tail =F)
+```
+
+
+Or even if we want to replicate the formula :
+
+```{r}
+1-phyper(k-1, M, N-M, n)
+```
+
+### Using Fisher Test directly
+
+```{r}
+fisher.test(d, alternative = "greater")
+```
+
+
+
+### Over-representation analysis (ORA)
+
+ORA for metabolite enrichment is the same method as for genes: it uses Fisher's exact test to test for significant overlap in sets.
+
+-   3 inputs:
+
+    -   a collection of pathways: one pathway is an ID associated with many metabolites. Metabolites can be in multiple pathways.
+
+    -   a list of metabolites of interest (i.e. filtered on p-values or fold changes), with IDs that match the pathway set IDs.
+
+    -   a background set:
+
+        -   targeted metabolomics: all assayed metabolites
+
+        -   untargeted metabolomics: all features that can be annotated
+
+
+### Over Representation Test tools
+
+#### Online tools
+
+* PANTHER (<http://geneontology.org/> or <http://www.pantherdb.org/>)
+* gprofiler (<https://biit.cs.ut.ee/gprofiler/gost>)
+* DAVID (<https://david.ncifcrf.gov/>)
+* WEB-based GEne SeT AnaLysis Toolkit (WebGestalt) <https://www.webgestalt.org/>
+
+#### Programmatic (R) tools 
+
+* `ClusterProfiler`
+* `hypeR`
+* `gprofiler2`
+* `rbioapi`: R api to query Enrichr, miEAA, PANTHER, Reactome, and STRING.
+
+### `clusterProfiler`
+
+
+
+#### And a `orgDB` object
+
+```{r,eval=FALSE}
+#| message: false
+#| warning: false
+
+require(clusterProfiler)
+require(org.Hs.eg.db)
+org.db <- org.Hs.eg.db
+
+## We can also use our own DB
+hub <- AnnotationHub()
+org.db <- hub[['AH111575']]
+org.db
+
+
+```
+
+
+
+#### GO over-representation analysis
+
+The clusterProfiler package implements `enrichGO()` for gene ontology over-representation test.
+
+
+```{r}
+#| message: false
+#| warning: false
+org.db <- org.Hs.eg.db::org.Hs.eg.db
+universe <- rownames(res1_Wilcox)
+# universe <- rownames(ifnb@assays$RNA$counts)
+gene  rownames(genetop_wilcox1)
+ego <- enrichGO(gene          = de_genes$rowname,
+                universe      = DE_result$rowname,
+                OrgDb         = org.db,
+                keyType = "ENSEMBL",
+                ont           = "BP",
+                pAdjustMethod = "BH",
+                pvalueCutoff  = 0.01,
+                qvalueCutoff  = 0.05,
+                readable      = TRUE)
+
+ego %>% as_tibble()
+```
+
+
+#### Basic visualisations: Dotplot
+
+```{r}
+#| echo: false
+
+dotplot(ego,showCategory=10)
+```
 
 # Pour aller plus loin
 
@@ -2103,7 +2609,15 @@ https://www.youtube.com/watch?v=como93CmnS8
 - From Seurat to SingleCellExperiment (sce)
 
 
+## Comment basculer entre Seurat / Scanpy / SingleCellExperiment (Vincent)
 
+From : https://jr-leary7.github.io/quarto-site/tutorials/Seurat_AnnData_Conversion.html
+
+```{r}
+if (!dir.exists("./conversion_files/")) {
+  dir.create("./conversion_files")
+}
+```
 
 
 ### Appendix

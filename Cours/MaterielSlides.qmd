@@ -1830,13 +1830,14 @@ ggvenn(list(DEseq2=rownames(genetopDEseq2),Nebula=genetopNeb2$gene,Wilcox=rownam
 ## Gene functional analysis
 
 
+Gene enrichment analysis identifies __biological pathways__ or __functions__ that are __overrepresented__ in a set of genes of interest.
+
 In functional analysis of biological pathway, the biologist is __always__ the expert :
 
 * The pathway database is determinent.
 * You decide the relationship and biological significance of the data you want to present.
 
 
-Gene enrichment analysis identifies __biological pathways__ or __functions__ that are __overrepresented__ in a set of genes of interest.
 
 ### Why ?
 
@@ -2244,22 +2245,6 @@ fisher.test(d, alternative = "greater")
 
 
 
-### Over-representation analysis (ORA)
-
-ORA for metabolite enrichment is the same method as for genes: it uses Fisher's exact test to test for significant overlap in sets.
-
--   3 inputs:
-
-    -   a collection of pathways: one pathway is an ID associated with many metabolites. Metabolites can be in multiple pathways.
-
-    -   a list of metabolites of interest (i.e. filtered on p-values or fold changes), with IDs that match the pathway set IDs.
-
-    -   a background set:
-
-        -   targeted metabolomics: all assayed metabolites
-
-        -   untargeted metabolomics: all features that can be annotated
-
 
 ### Over Representation Test tools
 
@@ -2310,13 +2295,11 @@ The clusterProfiler package implements `enrichGO()` for gene ontology over-repre
 #| message: false
 #| warning: false
 org.db <- org.Hs.eg.db::org.Hs.eg.db
-universe <- rownames(res1_Wilcox)
-# universe <- rownames(ifnb@assays$RNA$counts)
 gene  rownames(genetop_wilcox1)
-ego <- enrichGO(gene          = de_genes$rowname,
-                universe      = DE_result$rowname,
+ego <- enrichGO(gene          = eg$ENTREZID,
+                universe      = NULL,
                 OrgDb         = org.db,
-                keyType = "ENSEMBL",
+                keyType = "ENTREZID",
                 ont           = "BP",
                 pAdjustMethod = "BH",
                 pvalueCutoff  = 0.01,
@@ -2611,14 +2594,46 @@ https://www.youtube.com/watch?v=como93CmnS8
 
 ## Comment basculer entre Seurat / Scanpy / SingleCellExperiment (Vincent)
 
-From : https://jr-leary7.github.io/quarto-site/tutorials/Seurat_AnnData_Conversion.html
-
 ```{r}
-if (!dir.exists("./conversion_files/")) {
-  dir.create("./conversion_files")
+if (!dir.exists("conversion_files/")) {
+  dir.create("conversion_files")
 }
 ```
 
+```{r}
+sce_ifnb <- as.SingleCellExperiment(ifnb)
+```
+
+
+```{r,eval=F}
+library(zellkonverter)
+library(reticulate)
+writeH5AD(sce_ifnb, file = "conversion_files/sce_ifnb.h5ad")
+```
+
+```python
+
+import anndata as ad
+adata = ad.read('conversion_files/sce_ifnb.h5ad', backed='r')
+adata
+AnnData object with n_obs × n_vars = 13668 × 14053 backed at 'conversion_files/sce_ifnb.h5ad'
+    obs: 'orig.ident', 'nCount_RNA', 'nFeature_RNA', 'stim', 'seurat_annotations', 'RNA_snn_res.0.5', 'seurat_clusters', 'donor_id', 'celltype.stim', 'ident'
+    uns: 'X_name'
+    obsm: 'INTEGRATED.CCA', 'PCA', 'UMAP', 'UMAP.UNINTEGRATED'
+    layers: 'logcounts'
+
+```
+
+Stay in R:
+
+```{r,eval=F}
+adata <- SCE2AnnData(sce_ifnb)
+adata
+```
+
+Tuto by hand: https://jr-leary7.github.io/quarto-site/tutorials/Seurat_AnnData_Conversion.html
+
+Est-ce que je l'ajoute et que je teste si ça marche ? 
 
 ### Appendix
 

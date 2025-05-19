@@ -2592,7 +2592,12 @@ https://www.youtube.com/watch?v=como93CmnS8
 - From Seurat to SingleCellExperiment (sce)
 
 
-## Comment basculer entre Seurat / Scanpy / SingleCellExperiment (Vincent)
+## Comment basculer entre Seurat / Scanpy / SingleCellExperiment (Vincent)
+
+- `SeuratDisk`: the solution provided by Seurat to convert to various format $\rightarrow$ not working
+- `anndata2ri`: a python package developped to convert `AnnData`$\Leftrightarrow$`SingleCellExperiment`
+- `zellkonverter`: a python package developped to convert `SingleCellExperiment`$\rightarrow$ various objects.
+- `Seurat`$\rightarrow$`AnnData` can be done by hand $\rightarrow$ [details here](https://jr-leary7.github.io/quarto-site/tutorials/Seurat_AnnData_Conversion.html)
 
 ```{r}
 if (!dir.exists("conversion_files/")) {

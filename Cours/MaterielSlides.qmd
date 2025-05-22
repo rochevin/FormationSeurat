@@ -81,7 +81,7 @@ From https://www.nature.com/articles/s41580-023-00615-w
 ![](images/CellRanger-1.png)
 ![](images/CellRanger-Pos.png)
 
-https://www.10xgenomics.com/support/software/cell-ranger/latest/algorithms-overview/cr-gex-algorithm
+
 
 ![](images/CellRanger-V2.png)
 
@@ -2639,6 +2639,33 @@ adata
 Tuto by hand: https://jr-leary7.github.io/quarto-site/tutorials/Seurat_AnnData_Conversion.html
 
 Est-ce que je l'ajoute et que je teste si ça marche ? 
+
+
+### AnnData
+
+![Représentation schématique de l'objet AnnData](images/anndata_schema.svg){width="50%" fig-align:"center"}
+
+* `X`: Données de comptage sous forme de matrice creuse (sparse):
+  * ```python
+  adata.X
+  <100x2000 sparse matrix of type '<class 'numpy.float32'>'
+	with 126526 stored elements in Compressed Sparse Row format>
+    ```
+  * ```python
+  adata.obs_names = [f"Cell_{i:d}" for i in range(adata.n_obs)]
+  adata.var_names = [f"Gene_{i:d}" for i in range(adata.n_vars)]
+  print(adata.obs_names[:10])
+  Index(['Cell_0', 'Cell_1', 'Cell_2', 'Cell_3', 'Cell_4', 'Cell_5', 'Cell_6',
+       'Cell_7', 'Cell_8', 'Cell_9'],
+      dtype='object')
+    ```
+* `obs`/`var`: Metadonnées des observations variables 
+* `Layers`: `adata.layers["log_transformed"] = np.log1p(adata.X)`
+* `obsm`/`varm` : Métriques ou des données dérivées supplémentaires liées aux observations / variables (Résultat ACP)
+* `uns`: Données non structurées (paramètres de l'analyse, autres métadonnées, ...)
+* `obsp`/`varp`: Relations par paires entre les cellules
+
+
 
 ### Appendix
 

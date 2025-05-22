@@ -5,7 +5,6 @@ author:
   - "Cathy Maugis & Vincent Rocher"
 format:
   revealjs:
-    incremental: true
     slide-number: true
     progress: true
     fontsize: 25px
@@ -15,11 +14,421 @@ format:
     view-distance: 200
 code-annotations: below
 logo: images/Biostat_logo-rvb.png
-
+width: 1600
+height: 800
 ---
 
 
 # Formation Seurat
 
 
+## Qu'est-ce-que les données de single-cell RNA-seq ? {.smaller}
 
+
+
+### Principe du bulk RNA-seq
+
+![bulkRNAseq](images/BulkRNA.png){width=90%}
+
+:::{.fragment}
+
+### Principe du single-cell RNA-seq (scRNAseq)
+
+![scRNAseq](images/singlecell.png){width=90%}
+
+:::
+
+
+## De la manip à la fin de la bio-informatique 
+
+### Différentes technologies
+
+::: {#fig-techno-rna layout-ncol=1}
+
+![](images/type_of_sc_techno.svg){fig-align="center"}
+
+![](images/sc_applications.svg){fig-align="center"}
+
+
+From https://www.nature.com/articles/s41580-023-00615-w
+:::
+
+
+## De la manip à la fin de la bio-informatique 
+
+### Alignement - filtrage 
+
+- Après la manip, passage par la bioinformatique
+- Alignement des séquences, analyse des cellules que l'on peut retenir, ....
+
+:::{.fragment}
+
+
+### Avec [CellRanger](https://github.com/10XGenomics/cellranger)
+
+
+![](images/10XGenomics.png){width="30%" fig-align="center"}
+
+![](images/CellRanger-1.png){width="50%" fig-align="center"}
+
+
+
+
+
+
+:::
+
+
+## De la manip à la fin de la bio-informatique 
+
+
+::::{.columns}
+:::{.column}
+### Algorithme de [CellRanger](https://www.10xgenomics.com/support/software/cell-ranger/latest/algorithms-overview/cr-gex-algorithm)
+
+
+![](images/gex-algo-pipeline.png){width="100%" fig-align="center"}
+
+:::{.fragment}
+
+Les étapes importantes :
+
+- Trimming des reads
+- Demultiplexage - Stockage des UMIs
+- Alignement
+- UMI counting
+
+![UMI counting](images/biasedreads2.png){width="40%" fig-align="center"}
+:::
+
+
+:::
+
+:::{.column}
+
+![](images/SC3pGEX-algo-diagram.png){width="50%" fig-align="center"}
+
+:::
+
+::::
+
+
+
+## De la manip à la fin de la bio-informatique 
+
+### En sortie de [CellRanger](https://github.com/10XGenomics/cellranger)
+
+::: {#fig-techno-rna layout="[[1,1]]"}
+
+![Exemple de sortie](images/CellRanger-Pos.png){#cellranger-pos}
+
+![Exemple de sortie](images/CellRanger-V2.png){#cellranger-v2}
+
+:::
+
+
+## De la manip à la fin de la bio-informatique 
+
+### Autres outils
+
+- La suite `Salmon` pour le single-cell : [`alevin`](https://salmon.readthedocs.io/en/latest/alevin.html)
+- Traitement des umis dans une pipeline classique [`umi-tools`](https://umi-tools.readthedocs.io/en/latest/index.html) 
+
+### Autres pipelines
+
+- [`scrnaseq`](https://nf-co.re/scrnaseq/2.7.0/) du nf-core
+
+## De la manip à la fin de la bio-informatique 
+
+### Après la bio-informatique
+
+
+
+::::{.columns}
+:::{.column}
+
+### Pour 10X
+
+https://satijalab.org/seurat/reference/read10x
+
+- 3 fichiers : features, barcode et table de comptage (_matrix.mtx_)
+
+```r
+Read10X(
+  data.dir,
+  gene.column = 2,
+  cell.column = 1,
+  unique.features = TRUE,
+  strip.suffix = FALSE
+)
+```
+
+:::
+
+:::{.column}
+### Pour alvin
+
+- _quants_mat.gz_ – Compressed count matrix.
+- _quants_mat_cols.txt_ – Column Header (Gene-ids) of the matrix.
+- _quants_mat_rows.txt_ – Row Index (CB-ids) of the matrix.
+- _quants_tier_mat.gz_ – Tier categorization of the matrix.
+
+::: {.callout-note title="_quants_tier_mat.gz_"}
+- Tier 1 is the set of genes where all the reads are uniquely mapping. 
+- Tier 2 is genes that have ambiguously mapping reads, but connected to unique read evidence as well, that can be used by the EM to resolve the multimapping reads.
+- Tier 3 is the genes that have no unique evidence and the read counts are, therefore, distributed between these genes according to an uninformative prior.
+
+:::
+
+```r
+# Reading in the alevin quants quants using tximport
+txi <- tximport(files, type="alevin")
+```
+
+:::
+
+::::
+
+
+
+## De la question bio à la question stat
+
+### Biological questions
+
+:::: {.columns}
+::: {.column width="50%"}
+- **Existe-t-il des sous-populations distinctes de cellules ?**
+- **Pour chaque type cellulaire, quels sont les gènes marqueurs ?**
+- **Comment visualiser les cellules ?**
+- **Are there continuums of differentiation / activation cell states?**
+- ...
+:::
+::: {.column width="50%"}
+![(\tiny Rostom et al, FEBS 2017)](images/QBio.jpg){width="65%"}
+:::
+:::
+
+## De la question bio à la question stat
+
+### Statistical analysis
+:::: {.columns}
+::: {.column width="50%"}
+- **Regroupement (clustering) des cellules**
+- **Sélection de variables (gènes) dans un contexte d’apprentissage ou d’analyse différentielle (tests d’hypothèse)**
+- **Réduction de dimension**
+- **Inférence de réseaux**
+- **Inférence du (pseudo-)temps cellulaire**
+- ...
+:::
+::: {.column width="50%"}
+![(\tiny Rostom et al, FEBS 2017)](images/QBio.jpg){width="65%"}
+
+:::
+:::
+
+
+
+
+## Les packages pour analyser les données de scRNAseq
+
+### Number of available tools for scRNAseq data
+
+![Many packages are released regularly for scRNAseq data analysis.
+You can follow the news in the "Updates" section of scRNA-tools.](images/LogoscRNAtools.png)
+
+:::: {.columns}
+::: {.column width="50%"}
+![](images/Nbtools.png){width="60%"}
+:::
+::: {.column width="50%"}
+
+![](images/Nbtools2.png)
+:::
+:::
+
+## Les packages pour analyser les données de scRNAseq
+
+### Some bio-info-stat. pipelines/workflows
+
+::: {.panel-tabset}
+
+### Seurat
+
+[Seurat](https://satijalab.org/seurat/) <!--\cite{Satija15}-->
+
+![](images/Seurat.png){width="40%"}
+
+### SCANPY
+
+[SCANPY](https://github.com/theislab/Scanpy)
+
+![](images/Scanpy.png){width="40%"}
+
+### Sincell
+
+[Sincell](https://bioconductor.org/packages/release/bioc/html/sincell.html) 
+
+![](images/sincell.png){width="40%"}
+
+### simpleSingleCell
+
+[simpleSingleCell](https://bioconductor.org/packages/release/workflows/html/simpleSingleCell.html)
+
+![](images/WorkflowLun.png){width="40%"}
+![](images/simpleSingleCell.png){width="40%"}
+
+### SINCERA
+
+[SINCERA](https://research.cchmc.org/pbge/sincera.html)    
+
+![](images/SINCERAschema.png){width="30%"}
+
+### Scedar
+
+[Scedar](https://github.com/logstar/scedar)
+
+![](images/Scedar.png){width="40%"}
+
+:::
+
+
+## Les packages pour analyser les données de scRNAseq
+
+### Attention au type d'objet
+
+-   Chaque pipeline a son type d'Objet
+    -   Seurat en R $\longrightarrow$ `Seurat Object`
+    -   Scanpy en python $\longrightarrow$ `AnnData class`
+    -   `SingleCellExperiment` 
+- Il existe des fonctions qui permettent de passer de l'un à l'autre
+
+
+## Exemple pour la suite
+
+### Présentation des données
+
+- Données de Peripheral Blood Mononuclear Cells (PBMC) de 10X Genomics. 
+
+- 2700 cellules séquencées en Illumina NextSeq 500. 
+
+- Téléchargez le jeu de données [ici](https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz) ou sur le dépot git de la formation
+
+- Dans le dossier `".../hg19/"` on a trois fichiers 
+  + `barcodes.tsv`
+  + `genes.tsv`
+  + `matrix.mtx`
+
+
+# Pour aller plus loin
+
+## Spatial transcriptomic (ST)
+
+### ST Data
+
+- The **spot** by gene expression matrix 
+
+- The information necessary to associate spots with their physical position on the tissue image
+
+
+![](images/SpatialTransc.png)
+
+
+### Example
+
+Description: 
+
+- Mouse brain spatial expression for the anterior region
+
+$G=31053$ genes across $C=2696$ spots 
+
+```{r}
+library(SeuratData)
+library(Seurat)
+library(ggplot2)
+InstallData("stxBrain")
+brain <- LoadData("stxBrain", type = "anterior1")
+brain
+```
+
+## Spatial transcriptomic (ST)
+
+### Contenu de l'objet : 
+
+::::{.columns}
+:::{.column}
+![](images/Object-ST-1.png){width="90%"}
+:::
+:::{.column}
+
+
+
+
+```{r}
+brain@assays$Spatial$counts[1:6,1:10]
+brain@images$anterior1
+```
+
+```{r}
+SpatialFeaturePlot(brain, features = "nCount_Spatial") + 
+  theme(legend.position = "right")
+```
+
+:::
+::::
+
+
+## Spatial transcriptomic (ST)
+
+### Pipeline
+
+- Normalization
+
+- Dimension reduction
+
+- **Clustering** : take into account spatial information
+
+- Marker genes 
+
+- ....
+
+- Detecting **spatially-variable features**
+
+## Spatial transcriptomic (ST)
+
+### Normalization
+
+- Variance in molecular counts across spots is not just technical in nature, but also is dependent on the tissue anatomy. Standard approaches (such as the `LogNormalize()` function), which force each data point to have the same underlying ‘size’ after normalization, can be problematic.
+
+- Recommend using sctransform (Hafemeister and Satija, Genome Biology 2019)
+
+regularized negative binomial models of gene expression in order to account for technical artifacts while preserving biological variance. 
+UMI counts across cells in a dataset are modeled using a generalized linear model (GLM). The total UMI count per cell is used as an offset in the GLM. 
+
+$$
+x_{gc}\sim\mbox{NB}(\mu_{gc},\theta_g) \hspace{0.5cm} \ln(\mu_{gc})= \beta_{0g}+\ln(n_c)
+$$
+with $n_c = \sum_g x_{gc}$. 
+We perform three steps to remove technical noise and perform variance stabilization:
+
+  - Step 1: the inverse overdispersion parameter $\theta$ is individually estimated using a subset of genes (2000 by default), which are sampled in a density-dependent manner according to their average abundance. 
+  Step 2:  we calculate a smoothed curve that characterizes the global relationship between $\mu$ and $\theta$, thereby regularizing $\theta$ estimates as a function of gene mean. We perform the same regularization for the intercept parameter. We use the geometric mean to estimate gene abundance, which is more robust to outlier values in scRNA-seq. As outlier values can originate from multiple sources including the presence of cell doublets, errors in UMI collapsing, or ambient RNA, we have empirically improved performance when using the geometric mean instead of the arithmetic mean. Although sctransform supports multiple estimators for $\theta$, we recommend the use
+of glmGamPoi, an alternate estimator that is more robust and faster.
+
+  - Step 3: we use the regularized parameter estimates to calculate Pearson
+residuals $Z_{gc}$. The “residual variance” for a gene represents the remaining variation in gene expression that is not explained by the sctransform model,
+
+- `sctransform` normalizes the data, detects high-variance features, and stores the data in the SCT assay.
+
+![](images/Object-ST-2.png)
+
+
+```{r}
+#Normalization
+brain <- SCTransform(brain, assay = "Spatial", verbose = FALSE)
+brain@assays$SCT
+
+##-> englobe etape de normalisation, HVG, scale data
+VariableFeaturePlot(brain)
+
+SpatialFeaturePlot(brain, features = c("Ttr","Hbb-bs"))
+```

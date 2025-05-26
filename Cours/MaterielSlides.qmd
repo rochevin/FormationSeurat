@@ -742,7 +742,7 @@ Uniform manifold approximation and projection is a dimension reduction technique
 
 The algorithm is based on three assumptions about the data: (a) the data are uniformly distributed on the Riemannian manifold; (b) the Riemannian metric is locally constant (or can be approximated); and (c) the manifold is locally connected. According to these assumptions, the manifold with fuzzy topology can be modeled. The embedding is found by searching the low-dimensional projection of the data with the closest equivalent fuzzy topology. In terms of model construction, UMAP includes two steps: (1) building a particular weighted k-neighbor graph using the nearest-neighbor descent algorithm (Dong et al., 2011) and (2) computing a low-dimensional representation which can preserve desired characteristics of this graph.
 
-https://www.youtube.com/watch?v=jth4kEvJ3P8
+
 
 
 ```{r}
@@ -1882,6 +1882,7 @@ Using Gene IDs: enhances reproducibility in gene enrichment analysis by providin
 ### `bitr`: Biological Id TranslatoR
 
 ```{r}
+require(clusterProfiler)
 eg = bitr(rownames(genetop_wilcox1), fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
 eg  |> as_tibble()  |>  rmarkdown::paged_table()
 ```
@@ -2295,14 +2296,15 @@ The clusterProfiler package implements `enrichGO()` for gene ontology over-repre
 #| message: false
 #| warning: false
 org.db <- org.Hs.eg.db::org.Hs.eg.db
-gene  rownames(genetop_wilcox1)
+gene <- rownames(genetop_wilcox1)
+eg = bitr(gene, fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
 ego <- enrichGO(gene          = eg$ENTREZID,
                 universe      = NULL,
                 OrgDb         = org.db,
                 keyType = "ENTREZID",
                 ont           = "BP",
                 pAdjustMethod = "BH",
-                pvalueCutoff  = 0.01,
+                pvalueCutoff  = 0.05,
                 qvalueCutoff  = 0.05,
                 readable      = TRUE)
 

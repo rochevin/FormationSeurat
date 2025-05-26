@@ -1,5 +1,7 @@
 ---
 title: "TP - Partie 2"
+subtitle: "Analyse de deux conditions"
+author: "C.Maugis-Rabusseau et V.Rocher"
 format:
   html:
     toc: true
@@ -12,31 +14,34 @@ execute:
 ---
 
 ```{r}
-# Les librairies
+#| message: false
+#| warning: false
 
 library(Seurat)
 library(SeuratData)
-source("Cours/FunctionsAux.R")
 library(ggplot2)
 library(reshape2)
 library(tidyverse)
+library(DESeq2)
+library(randomForest)
+library(ggvenn)
+source("Cours/FunctionsAux.R")
 
 #devtools::install_github('immunogenomics/presto')
-
+#devtools::install_github('satijalab/seurat-data')
 ```
 
 # Présentation et création de l'objet Seurat
 
-### Présentation des données
+## Présentation des données
 
 - Les données `ifnb` disponibles dans seurat-data
 
 - Data : human PBMC from two conditions, interferon-stimulated and control cells (stored in the stim column in the object metadata). We will aim to integrate the two conditions together, so that we can jointly identify cell subpopulations across datasets, and then explore how each group differs across conditions
 
-### Objet Seurat depuis seurat data
+## Objet Seurat depuis seurat data
 
 ```{r}
-# devtools::install_github('satijalab/seurat-data')
 InstallData("ifnb")
 ifnb <- LoadData("ifnb")
 ```
@@ -74,7 +79,7 @@ head(ifnb@meta.data)
 ```
 
 
-### Construction depuis les données de séquençage (Méthode 1 - `?ifnb`)
+## Construction depuis les données de séquençage (Méthode 1 - `?ifnb`)
 
 - Pour la récupération des données de séquençage :
 
@@ -110,7 +115,7 @@ rm(ifnb2)
 
 # Normalization, réduction de dimension et clustering
 
-### Normalisation
+## Normalisation
 
 - Fait la normalisation comme vu précédemment pour chaque matrice de counts 
 (counts.CTRL --> data.CTRL et counts.STIM--> data.STIM)
@@ -123,7 +128,7 @@ ifnb@assays$RNA$data.CTRL[1:10,1:10]
 ifnb@assays$RNA$data.STIM[1:10,1:10]
 ```
 
-### HVG 
+## HVG 
 
 - HVG : il le fait pour chaque condition mais on a une répondre globale et un graphe global 
   
@@ -139,7 +144,7 @@ plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 plot2
 ```
 
-### Réduction de dimension sans integration
+## Réduction de dimension sans intégration
 
 - Réduction de dimension sur la matrice des comptages normalisés (composée de deux blocs) centrés réduits
 
@@ -156,7 +161,7 @@ DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
 
 # Integration des données 
 
-### Integration avec `CCA`
+## Integration avec `CCA`
 
 - Utilisation de la fonction `IntegrateLayers()` avec la méthode CCA = Canonical Correlation Analysis
 
@@ -187,7 +192,7 @@ p1+p2
 ```
 
 
-### Integration avec `Harmony`
+## Integration avec `Harmony`
 
 ```{r}
 ifnb_h <- IntegrateLayers(object = ifnb, 
@@ -224,7 +229,7 @@ rm(ifnb_h,ifnb_cca)
   
 # Clustering 
 
-### Méthode de Louvain 
+## Méthode de Louvain 
 
 - Clustering sur les données intégrées avec la résolution $r=0.5$
 
@@ -255,7 +260,7 @@ ggplot(data=Aux, aes(x=Cluster, y=len, fill=Condition)) +
   theme_minimal()
 ```
 
-### Annotation
+## Annotation
 
 - Une annotation des cellules est disponible 
 
@@ -273,7 +278,7 @@ DimPlot(ifnb,
 table(Idents(ifnb),ifnb$seurat_annotations)
 ```
 
-# Marker genes des types cellulaires conservés
+# Gènes marqueurs des types cellulaires conservés
 
 - Déterminer les gènes marqueurs des types cellulaires qui sont conservés entre les conditions
 
@@ -299,13 +304,12 @@ DotPlot(ifnb, features = rownames(NK.markers)[1:10],
     RotatedAxis()
 ```
 
+
 # Analyse différentielle
 
+## Informations complémentaires
 
-
-### Pseudo-bulk
-
-D'abord ajout d'informations pour avoir des "replicats"
+D'abord ajout d'informations pour avoir des "réplicats"
 
 ```{r}
 # load the inferred sample IDs of each cell
@@ -333,50 +337,291 @@ ifnb$donor_id[is.na(ifnb$donor_id)] <- "unknown"
 ifnb <- subset(ifnb, subset = donor_id != "unknown")
 ```
 
+```{r}
+table(ifnb$donor_id)
+```
 
-Ici regroupement par condition (CTRL/STIM) et par types cellulaires (sens??) et donor ids 
+Pour la suite, création d'une colonne `celltype.stim` combinant le type cellulaire et la condition.  
 
 ```{r}
-# pseudobulk
-pseudo_ifnb <- AggregateExpression(ifnb, 
+ifnb$celltype.stim <- paste(ifnb$seurat_annotations, ifnb$stim, sep = "_")
+table(ifnb$celltype.stim)
+```
+
+## Exemple : Question 1
+
+Question 1:  déterminer les gènes dont l'expression varie entre les deux conditions (types cellulaires confondus)
+
+
+### Par méthode naive (Wilcoxon)
+
+```{r}
+Idents(ifnb)<-ifnb$stim
+res1_Wilcox <- FindMarkers(object = ifnb, 
+                           ident.1 = "STIM", 
+                           ident.2 = "CTRL",
+                           test.use = "wilcox")
+mean(res1_Wilcox$p_val_adj<0.01)
+
+genetop_wilcox1<-res1_Wilcox %>%
+   filter(p_val_adj<0.01)%>%
+   arrange(desc(abs(avg_log2FC)))%>%
+   top_n(200)
+```
+
+```{r}
+DotPlot(ifnb,features=rownames(genetop_wilcox1)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+
+### Par pseudo-bulk (DESeq2)
+
+- On regroupe par condition et donor_id pour la création des données de pseudoBulk
+
+```{r}
+pseudo_ifnb1 <- AggregateExpression(ifnb, 
                                    assays = "RNA", 
                                    return.seurat = T, 
-              group.by = c("stim", "donor_id", "seurat_annotations"))
+                                   group.by = c("stim", "donor_id"))
 
-head(pseudo_ifnb)
-class(pseudo_ifnb)
-pseudo_ifnb@assays$RNA$counts[1:10,]
+head(pseudo_ifnb1)
 ```
 
+- DESeq2 depuis Seurat
 
 ```{r}
-pseudo_ifnb$celltype.stim <- paste(pseudo_ifnb$seurat_annotations, pseudo_ifnb$stim, sep = "_")
-table(pseudo_ifnb$celltype.stim)
-Idents(pseudo_ifnb) <- "celltype.stim"
-table(Idents(pseudo_ifnb))
-```
-
-Utilisation de DESeq2 : 
-
-```{r}
-bulk.mono.de <- FindMarkers(object = pseudo_ifnb, 
-                         ident.1 = "CD14 Mono_STIM", 
-                         ident.2 = "CD14 Mono_CTRL",
+Idents(pseudo_ifnb1)<-"stim"
+bulk.cond1 <- FindMarkers(object = pseudo_ifnb1, 
+                         ident.1 = "STIM", 
+                         ident.2 = "CTRL",
                          test.use = "DESeq2")
-head(bulk.mono.de, n = 10)
-ggplot(bulk.mono.de,aes(x=avg_log2FC,y=-log10(p_val_adj)))+geom_point()
+```
 
+- En passant par le package DESeq2
 
-genetop<-bulk.mono.de %>%
-  filter(p_val_adj<0.01)%>%
-  arrange(abs(avg_log2FC))%>%
-  top_n(10)
+```{r}
+cts1<-as.matrix(pseudo_ifnb1@assays$RNA$counts)
+coldata1<-pseudo_ifnb1@meta.data
+dds1 <- DESeqDataSetFromMatrix(countData = cts1,
+                              colData = coldata1,
+                              design= ~ donor_id + stim) 
+dds1 <- DESeq(dds1,fitType = c("local"))                      
+resultsNames(dds1) # lists the coefficients
 
-DoHeatmap(pseudo_ifnb[,which(Idents(pseudo_ifnb)%in%c("CD14 Mono_STIM", "CD14 Mono_CTRL"))],features=rownames(genetop),assay="RNA",slot="data")
+resDEseq1<-results(dds1,name="stim_STIM_vs_CTRL")
+length(which(resDEseq1$padj<0.01)) / nrow(resDEseq1)
+```
 
-DotPlot(pseudo_ifnb,features=rownames(genetop),group.by = "celltype.stim")
+```{r}
+genetopDEseq1<-as.data.frame(resDEseq1) %>%
+   filter(padj<0.01)%>%
+   arrange(desc(abs(log2FoldChange)))%>%
+   top_n(200)
+```
+
+```{r}
+DotPlot(ifnb,features=rownames(genetopDEseq1)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r}
+library(pheatmap)
+pheatmap(pseudo_ifnb1@assays$RNA$scale.data[rownames(genetopDEseq1),],
+         cluster_cols = FALSE,       
+         scale = "column",              
+         show_rownames = FALSE,
+         show_colnames = TRUE)
 ```
 
 
-Je ne suis pas convaincue des résultats ??!!
+### Par une méthode spécifique single-cell (ex: NEBULA)
 
+```{r}
+library(nebula)
+ifnb_neb1<-scToNeb(obj=ifnb,assay="RNA",id="donor_id",pred=c("stim","seurat_annotations"))
+df1 = model.matrix(~stim+seurat_annotations, data=ifnb_neb1$pred)
+data_g = group_cell(count=ifnb_neb1$count,id=ifnb_neb1$id,pred=df1) # il faut grouper les cellules par indiv avant de faire nebula
+```
+
+```{r}
+#re1 = nebula(data_g$count,data_g$id,pred=data_g$pred)
+re1<-readRDS("Exercices/ResNebulaQ1.rds")
+
+mean(p.adjust(re1$summary$p_stimSTIM,method="BH")<0.01)
+
+ifnbNebSumm1<-re1$summary
+ifnbNebSumm1$padjStim<-p.adjust(re1$summary$p_stimSTIM,method="BH")
+ifnbNebSumm1<-ifnbNebSumm1%>%
+            filter(padjStim <0.01)%>%
+            arrange(desc(abs(logFC_stimSTIM)))  
+head(ifnbNebSumm1)
+```
+
+```{r}
+genetopNeb1<-ifnbNebSumm1%>%
+   top_n(200)
+
+DotPlot(ifnb,features=genetopNeb1$gene[1:30],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+pheatmap(pseudo_ifnb1@assays$RNA$scale.data[genetopNeb1$gene,],
+         cluster_cols = FALSE,       
+         scale = "column",              
+         show_rownames = FALSE,
+         show_colnames = TRUE)
+```
+
+### Comparaison
+
+```{r}
+ggvenn(list(DEseq2=rownames(genetopDEseq1),
+            Nebula=genetopNeb1$gene,
+            Wilcox=rownames(genetop_wilcox1)))
+```
+
+
+## Exemple : Question 2
+
+Question 2 : déterminer les gènes dont l'expression varie entre les deux conditions pour le type cellulaire "CD14 Mono" fixé.
+
+### Test de Wilcoxon
+
+```{r}
+ICD14Mono<-which(ifnb$seurat_annotations=="CD14 Mono")
+
+Idents(ifnb)<-ifnb$celltype.stim
+res2_Wilcox <- FindMarkers(object = ifnb, 
+                           ident.1 = "CD14 Mono_STIM", 
+                           ident.2 = "CD14 Mono_CTRL",
+                           test.use = "wilcox")
+
+mean(res2_Wilcox$p_val_adj<0.01)
+
+genetop_wilcox2<-res2_Wilcox %>%
+   filter(p_val_adj<0.01)%>%
+   arrange(desc(abs(avg_log2FC)))%>%
+   top_n(100)
+```
+
+```{r}
+DotPlot(ifnb[,ICD14Mono],features=rownames(genetop_wilcox2)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### Test de DESeq2
+
+```{r}
+pseudo_ifnb2 <- AggregateExpression(ifnb[,ICD14Mono], 
+                                   assays = "RNA", 
+                                   return.seurat = T, 
+                                   group.by = c("stim", "donor_id"))
+
+cts2<-as.matrix(pseudo_ifnb2@assays$RNA$counts)
+coldata2<-pseudo_ifnb2@meta.data
+dds2 <- DESeqDataSetFromMatrix(countData = cts2,
+                              colData = coldata2,
+                              design= ~ donor_id + stim) 
+dds2 <- DESeq(dds2,fitType = c("local"))                      
+resultsNames(dds2) # lists the coefficients
+
+resDEseq2<-results(dds2,name="stim_STIM_vs_CTRL")
+length(which(resDEseq2$padj<0.01)) / nrow(resDEseq2)
+```
+
+
+```{r}
+genetopDEseq2<-as.data.frame(resDEseq2) %>%
+   filter(padj<0.01)%>%
+   arrange(desc(abs(log2FoldChange)))%>%
+   top_n(100)
+
+DotPlot(pseudo_ifnb2,features=rownames(genetopDEseq2)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopDEseq2),],
+         cluster_cols = FALSE,       
+         scale = "column",              
+         show_rownames = FALSE,
+         show_colnames = TRUE)
+```
+
+### Test avec Nebula
+
+```{r}
+Idents(ifnb)<-ifnb$seurat_annotations
+ifnb_neb2<-scToNeb(obj=ifnb[,ICD14Mono],
+                   assay="RNA",
+                   id="donor_id",
+                   pred=c("stim"))
+df2 = model.matrix(~stim, data=ifnb_neb2$pred)
+data_g2 = group_cell(count=ifnb_neb2$count,id=ifnb_neb2$id,pred=df2) # il faut grouper les cellules par indiv avant de faire nebula
+
+#re2 = nebula(data_g2$count,data_g2$id,pred=data_g2$pred)
+re2<-readRDS("Exercices/ResNebulaQ2.rds")
+
+mean(p.adjust(re2$summary$p_stimSTIM,method="BH")<0.01)
+
+ifnbNebSumm2<-re2$summary
+ifnbNebSumm2$padjStim<-p.adjust(re2$summary$p_stimSTIM,method="BH")
+ifnbNebSumm2<-ifnbNebSumm2%>%
+            filter(padjStim <0.01)%>%
+            arrange(desc(abs(logFC_stimSTIM)))  
+head(ifnbNebSumm2)
+```
+
+```{r}
+genetopNeb2<-ifnbNebSumm2%>%
+   top_n(100)
+
+DotPlot(ifnb,features=genetopNeb2$gene[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+library(pheatmap)
+pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
+         cluster_cols = FALSE,       
+         scale = "row",              
+         show_rownames = FALSE,
+         show_colnames = TRUE)
+```
+
+### Par une approche supervisée (ex: Random Forest)
+
+```{r}
+datatrain<-t(as.matrix(ifnb@assays$RNA$scale.data[,ICD14Mono]))
+dataRF<-data.frame(datatrain,
+                   Cl = as.factor(ifnb$stim[ICD14Mono]))
+
+#resRF<-randomForest(Cl ~ ., data = dataRF,importance=T,proximity=T)
+resRF<-readRDS("Exercices/resNF.rds")
+
+varImpPlot(resRF)
+table(resRF$predicted,dataRF$Cl)
+
+genetopRF2<-as.data.frame(resRF$importance)%>%
+      arrange(desc(MeanDecreaseAccuracy))%>%
+      top_n(100)
+```
+
+```{r}
+DotPlot(ifnb,features=rownames(genetopRF2)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+#library(pheatmap)
+#pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopRF2),],
+#         cluster_cols = FALSE,       
+#         scale = "row",              
+#         show_rownames = FALSE,
+#         show_colnames = TRUE)
+```
+
+### Comparaison
+
+```{r}
+ggvenn(list(DEseq2=rownames(genetopDEseq2),
+            Nebula=genetopNeb2$gene,
+            Wilcox=rownames(genetop_wilcox2),
+            RF=rownames(genetopRF2)))
+```

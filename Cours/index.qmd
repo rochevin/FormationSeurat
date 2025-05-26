@@ -214,7 +214,7 @@ txi <- tximport(files, type="alevin")
 :::: {.columns}
 ::: {.column width="50%"}
 - **Regroupement (clustering) des cellules**
-- **Sélection de variables (gènes) dans un contexte d’apprentissage ou d’analyse différentielle (tests d’hypothèse)**
+- **Sélection de variables (gènes) dans un contexte d'apprentissage ou d'analyse différentielle (tests d'hypothèse)**
 - **Réduction de dimension**
 - **Inférence de réseaux**
 - **Inférence du (pseudo-)temps cellulaire**
@@ -318,6 +318,331 @@ You can follow the news in the "Updates" section of scRNA-tools.](images/LogoscR
   + `genes.tsv`
   + `matrix.mtx`
 
+## Normalisation 
+
+### Why do we need to normalize the data ?
+
+- We need to remove technical biases in order to 
+  + to be able to compare cells
+  
+![from https://www.biostars.org/p/349881/](images/motivNormalisation.png)
+
+::: {.callout-warning}
+
+- The 2 libraries have the same RNA composition.
+- But the condition B has 3 times more reads than the condition A.
+- Take into account the sparsity of the count matrix  
+
+**We need to correct for differences in library size to be able to compare genes.**
+
+:::
+
+
+## Normalization in Seurat
+
+
+### Many possible strategies for normalized data
+
+- In Seurat, function `NormalizeData(object,normalization.method= ...,)`
+
+  + "LogNormalize" : Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale.factor. This is then natural-log transformed using log1p
+
+  + "CLR" : Applies a centered log ratio transformation
+  
+  ```r
+  clr_function <- function(x) {
+          return(log1p(x = x / (exp(x = sum(log1p(x = x[x > 0]), na.rm   >= TRUE) / length(x = x)))))}
+  log1p(x) computes log(1+x) accurately also for |x| << 1.
+  ```
+
+  + "RC" (Relative counts): Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale.factor. 
+  No log-transformation is applied. 
+  For counts per million (CPM) set scale.factor = 1e6
+
+  + "SCTransform" : il faut passer par une autre fonction `SCTransform()`: The use of SCTransform replaces the need to run NormalizeData, FindVariableFeatures, or ScaleData (described below.). In Seurat v5, SCT v2 is applied by default. You can revert to v1 by setting vst.flavor = 'v1'
+
+
+## Example
+
+```r
+ pbmc <- NormalizeData(pbmc, 
+                       normalization.method = "LogNormalize", 
+                       scale.factor = 10000)
+```
+
+  
+![](images/SO-4.png)  
+  
+  
+## Identification des gènes HVG
+
+- Identification of High Variable Gene (HVG)
+- Exhibit high cell-to-cell variation in the dataset 
+
+
+
+Dans la fonction `FindVariableFeatures(object,selection.method=...,)` : 
+
+- "vst": First, fits a line to the relationship of log(variance) and log(mean) using local polynomial regression (loess). Then standardizes the feature values using the observed mean and expected variance (given by the fitted line). Feature variance is then calculated on the standardized values after clipping to a maximum (see clip.max parameter).
+
+- "mean.var.plot" (mvp): First, uses a function to calculate average expression (mean.function) and dispersion (dispersion.function) for each feature. Next, divides features into num.bin (default 20) bins based on their average expression, and calculates z-scores for dispersion within each bin. The purpose of this is to identify variable features while controlling for the strong relationship between variability and average expression
+
+- "dispersion" (disp): selects the genes with the highest dispersion values
+
+
+## Identification des gènes HVG
+
+::: {.callout-note title="**Feature selection for individual datasets**"}
+- In each dataset, we next aimed to identify a subset of features (e.g., genes) exhibiting high variability across cells, and therefore represent heterogeneous features to prioritize for downstream analysis. 
+- Choosing genes solely based on their log-normalized single-cell variance fails to account for the mean-variance relationship that is inherent to single-cell RNA-seq. Therefore, we first applied a variance-stabilizing transformation to correct for this [Mayer et al., 2018; Hafemeister and Satija, 2019].
+- To learn the mean-variance relationship from the data, we computed the mean and variance of each gene using the unnormalized data and applied log10 transformation to both
+- We then fit a curve to predict the variance of each gene as a function of its mean, by calculating a local fitting of polynomials of degree 2
+- This global fit provided us with a regularized estimator of variance given the mean of a feature. As such, we could use it to standardize feature counts without removing higher-than-expected variation.
+- Given the expected variances, we performed the transformation $z_{i,j} = \frac{x_{i,j} - \bar{x}_i}{\sigma_i}$
+  - where $z_{i,j}$ is the standardized value of feature $i$ in cell $j$
+  - $x_{i,j}$ is the raw value of feature $i$ in cell $j$
+  - $\bar{x}_i$ is the mean raw value for feature $i$
+  - $\sigma_i$ is the expected standard deviation of feature $i$ derived from the global mean-variance fit
+- To reduce the impact of technical outliers, we clipped the standardized values to a maximum value of $\sqrt{N}$, where $N$ is the total number of cells. 
+- For each gene, we then computed the variance of standardized values across all cells. 
+:::
+
+This variance represents a measure of single-cell dispersion after controlling for mean expression, and we use it directly to rank the features. Unless otherwise noted, we selected the 2,000 genes with the highest standardized variance as "highly variable." This procedure is implemented in the `FindVariableFeatures` function in Seurat v3 `(selection.method = "vst")`
+
+Stuart et al. (Cell, 2019). Comprehensive Integration of Single-Cell Data 
+
+
+
+## Réduction de dimension
+
+::::{.columns}
+:::{.column}
+
+### Objectifs de la réduction de dimension
+
+- Minimize curse of dimensionality
+- Allow visualization
+- Reduce computational time
+- $\ldots$ 
+- But beware of the interpretations after!
+
+:::
+
+:::{.column}
+
+:::{.fragment}
+
+### Several methods
+
+Several methods are available:
+
+- **PCA**, 
+- **t-SNE**, 
+- **UMAP**, 
+- ZIFA, 
+- ZINB-WaVe, 
+- SWNE, 
+- Diffusion MAP, 
+- pCMF, 
+- $\ldots$ 
+
+Comparaison des rendus avec [Sleepwalk](https://anders-biostat.github.io/sleepwalk/#)
+:::
+
+:::
+
+::::
+
+
+## Scaling the data
+
+::: {.callout-note title="**Vignette Seurat**"}
+- Shifts the expression of each gene, so that the mean expression across cells is 0
+- Scales the expression of each gene, so that the variance across cells is 1
+This step gives equal weight in downstream analyses, so that highly-expressed genes do not dominate
+- The results of this are stored in pbmc[["RNA"]]$scale.data
+By default, only variable features are scaled.
+You can specify the features argument to scale additional features
+:::
+
+ 
+:::{.fragment}
+
+
+
+Dans Seurat, fonction `ScaleData()`
+
+```r
+pbmc<-ScaleData(pbmc) #features = Default is variable features J (=2000 par défaut)
+```
+
+![](images/SO-6.png){width="60%"}
+:::
+
+
+## Principe de PCA
+
+- PCA = Principal Component Analysis
+- Réduire l'espace tout en conservant "assez dinformation"
+- Méthode de réduction linéaire : Les composantes principales (méta-variables) sont des combinaisons linéaires des variables initiales (ici les gènes)
+- Correspond à la diagonalisation de la matrice de corrélation (si ACP centrée réduite)
+  + valeur propre $\lambda_s$ = inertie des individus projetés sur l'axe porté par un vecteur propre normé associé $v_s$ (axe principal)
+  + composante principale $C_s$ contient les coordonnées des projetés des individus sur l'axe engendré par $v_s$
+
+
+
+
+::::{.columns}
+:::{.column}
+![](images/ACP-Fenelon.png){width="90%"}
+:::
+:::{.column}
+
+![](images/repereACP.png)
+:::
+::::
+
+
+## Principe de la PCA
+
+```{r}
+#| echo: FALSE
+#| warning: false
+#| message: false
+require(mvtnorm)
+require(tidyverse)
+require(patchwork)
+library(FactoMineR)
+library(gridExtra)
+```
+
+```{r}
+#| echo: TRUE
+#| fig-height: 4
+#| 
+
+set.seed(1234)
+R<-matrix(c(1,1,-1,1),ncol=2)/sqrt(2)
+Sigma<-R%*%diag(c(4,0.5))%*%t(R)
+X<-as.data.frame(rmvnorm(50,mean=rep(0,2),sigma=Sigma))
+#ggplot(X,aes(x=V1,y=V2))+
+#  geom_point()+
+#  theme_minimal()+xlab("x")+ylab("y")+xlim(-4,4)+ylim(-5,5)
+res<-PCA(X,scale.unit = F,graph=F)
+```
+
+
+
+```{r,echo=F}
+#| fig-height: 12
+proj<-function(X,a,b,xl,xmin=-4,xmax=4,ymin=-5,ymax=5){
+  v<-c(a,b)
+  v<-v/sqrt(sum(v^2))
+  
+  dfline=data.frame(xx=seq(-xl,xl,0.01),yy=(v[2]/v[1]*seq(-xl,xl,0.01)))
+  aux<-as.matrix(X)%*%as.matrix(v)
+  Y<-matrix(rep(v,each=nrow(X)),ncol=2)
+  for (i in 1:nrow(Y))
+    Y[i,]<-aux[i]*Y[i,]
+  dfproj=data.frame(xp=Y[,1],yp=Y[,2])
+  
+  line_df <- data.frame(
+  x = X[,1],
+  y = X[,2],
+  xend =Y[,1],
+  yend = Y[,2]
+  )
+
+  g<-ggplot(X,aes(x=V1,y=V2))+
+    geom_point()+
+    geom_line(data=dfline,aes(x=xx,y=yy))+
+    geom_point(data=dfproj,aes(x=xp,y=yp),col="red")+
+    geom_segment(
+    data = line_df, 
+    mapping = aes(x=x, y=y, xend=xend, yend=yend), 
+    inherit.aes = FALSE,linetype="dotted"
+  )+
+  xlab("")+ylab("")+xlim(xmin,xmax)+ylim(ymin,ymax)+
+  ggtitle(paste("Inertie axiale= ",round(sum(diag(var(Y))),2),sep=""))
+  return(g)
+}
+
+
+g1<-proj(X,a=res$var$coord[1,1],b=res$var$coord[2,1],xl=4)
+g2<-proj(X,a=cos(2*pi/3),b=sin(2*pi/3),xl=3)
+
+grid.arrange(g1,g2,ncol=2)
+```
+
+## Principe de PCA
+
+
+```{r,echo=FALSE}
+#| fig.width: 8
+#| fig.height: 4 
+#| fig.cap: Analyse en composante principale du jeu de données iris sur les deux premières dimensions.
+X <- iris[,c(1,3)]
+# Run PCA
+pca <- princomp(X)
+load <- loadings(pca)
+slope <- load[2, ] / load[1, ]
+cmeans <- apply(X, 2, mean)
+intercept <- cmeans[2] - (slope * cmeans[1])
+
+
+# Plot perpendicular segments
+
+df<-data.frame(X)
+img1 <- ggplot(df,aes(Sepal.Length,Petal.Length))+
+  geom_point()+
+  geom_point(data = cmeans %>% t %>%  as.data.frame(),aes(Sepal.Length,Petal.Length),col="red",size=4) +
+  geom_abline(intercept=intercept[1],slope=slope[1],linetype="dashed")+
+  geom_abline(intercept=intercept[2],slope=slope[2],linetype="dashed")+
+  theme_classic(base_size=16) + coord_fixed()
+
+
+img2 <- (pca$scores) %>% as.data.frame() %>% ggplot(aes(Comp.1,-1*Comp.2)) + geom_point()+ theme_classic(base_size=16) + geom_vline(xintercept = 0,linetype="dashed")+ geom_hline(yintercept = 0,linetype="dashed")
+
+design <- "AB"
+wrap_plots(A=img1,B=img2, design = design,tag_level="new")+  plot_annotation(tag_levels = "A")
+```
+
+- Les axes de l'ACP sont projetés sur les dimensions d'origine et passent par la moyenne (rouge).
+- Projection des points dans l'espace de l'ACP.
+
+
+
+## PCA with Seurat
+
+-   L'ACP est faite sur les données centrées réduites à l'aide de la fonction `runPCA()`
+
+```r
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+  #str(pbmc@reductions$pca)
+```
+
+Mais probleme de l'ACP sur les données scRNAseq
+
+- C'est une méthode de réduction de dimension linéaire
+- Elle est sensible à la sparsité des données scRNAseq 
+- C'est utilisé pour réduire le jeu de données pour certaines méthodes dans la suite de l'étude
+
+
+
+## t-SNE
+
+- Méthode de réduction de dimension non-linéaire (Maaten and Hinton, 2008; Van Der Maaten, 2014)
+
+::: {.callout-note title="t-SNE"}
+t-Distributed stochastic neighbor embedding is a state-of-the-art dimensionality reduction algorithm for non-linear data representation that produces a low-dimensional distribution of high-dimensional data (Maaten and Hinton, 2008; Van Der Maaten, 2014). It excels at revealing local structure in high-dimensional data. t-SNE is based on the SNE (Hinton and Roweis, 2002), which starts from converting the high-dimensional Euclidean distances between data points into conditional probabilities that represent similarities. The main idea and the modifications of t-SNE are (1) the symmetric version of SNE and (2) using a Student's t distribution to compute the similarity between two points in the low-dimensional space.
+
+:::
+
+![](images/schemetSNE.png)
+
+::: {.callout-warning}
+Dans Seurat, en raison de la dimension des données, part avec les données de l'ACP (reduction="pca" par défaut). Détermination des voisins par KNN puis t-SNE avec la fonction `RunTSNE()`
+:::
 
 # Pour aller plus loin
 
@@ -397,7 +722,7 @@ SpatialFeaturePlot(brain, features = "nCount_Spatial") +
 
 ### Normalization
 
-- Variance in molecular counts across spots is not just technical in nature, but also is dependent on the tissue anatomy. Standard approaches (such as the `LogNormalize()` function), which force each data point to have the same underlying ‘size’ after normalization, can be problematic.
+- Variance in molecular counts across spots is not just technical in nature, but also is dependent on the tissue anatomy. Standard approaches (such as the `LogNormalize()` function), which force each data point to have the same underlying ‘size' after normalization, can be problematic.
 
 - Recommend using sctransform (Hafemeister and Satija, Genome Biology 2019)
 
@@ -415,7 +740,7 @@ We perform three steps to remove technical noise and perform variance stabilizat
 of glmGamPoi, an alternate estimator that is more robust and faster.
 
   - Step 3: we use the regularized parameter estimates to calculate Pearson
-residuals $Z_{gc}$. The “residual variance” for a gene represents the remaining variation in gene expression that is not explained by the sctransform model,
+residuals $Z_{gc}$. The "residual variance" for a gene represents the remaining variation in gene expression that is not explained by the sctransform model,
 
 - `sctransform` normalizes the data, detects high-variance features, and stores the data in the SCT assay.
 

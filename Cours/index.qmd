@@ -18,6 +18,14 @@ width: 1600
 height: 800
 ---
 
+```{r setup, include=FALSE}
+require(knitr)
+require(kableExtra)
+require(tidyverse)
+require(Seurat)
+options(kableExtra.latex.load_packages = FALSE)
+options(knitr.table.format = "html")
+```
 
 # Formation Seurat
 
@@ -326,7 +334,6 @@ You can follow the news in the "Updates" section of scRNA-tools.](images/LogoscR
 #| echo: false
 #| warning: false
 
-library(Seurat)
 pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
 
 pbmc <- CreateSeuratObject(counts = pbmc.data, 

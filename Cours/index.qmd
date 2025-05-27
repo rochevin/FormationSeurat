@@ -351,21 +351,18 @@ pbmc <- CreateSeuratObject(counts = pbmc.data,
 pbmc@assays$RNA$counts[10:20,1:15]
 ```
 
+
+- Bruit technique et biologique
+- Forte variabilité
+- Données avec beaucoup de zéros (zero-inflated) $\longrightarrow$ sparsité ($\geq 80\%$ de zéros par ligne, dropouts)
+
+
 :::
 :::{.column}
 ![](images/SO-1.png)
 :::
 ::::
 
-
-## Spécificités des données scRNAseq
-
-- $C$ cellules décrites par  $G$ gènes:  $C\leq G$ or $C \approx G$ $\Longrightarrow$ grande dimension
-- Mesures: $y_{cg}\in\mathbb{N}$  = count expression measure of gene $g$ in cell $c$. Ce sont des comptages
-- Technical and biological noise
-- High variability
-- Zero-inflated data $\Longrightarrow$ "sparsity" 
-($\geq 80\%$ of zeros per raw, dropouts). 
 
 # Pipeline d'analyse d'une condition biologique
 

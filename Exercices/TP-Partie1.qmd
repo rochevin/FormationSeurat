@@ -1,5 +1,7 @@
 ---
 title: "TP - Partie 1"
+subtitle: "Analyse pour une condition"
+author: "C.Maugis-Rabusseau et V. Rocher"
 format:
   html:
     toc: true
@@ -12,8 +14,8 @@ execute:
 ---
 
 ```{r}
+#| message: False
 # Les librairies
-
 library(Seurat)
 library(ggplot2)
 library(reshape2)
@@ -29,7 +31,7 @@ source("Cours/FunctionsAux.R")
 
 # Démarrage avec Seurat 
 
-### Présentation des données 
+## Présentation des données 
 - Données de Peripheral Blood Mononuclear Cells (PBMC) de 10X Genomics. 
 
 - 2700 cellules séquencées en Illumina NextSeq 500. 
@@ -41,7 +43,7 @@ source("Cours/FunctionsAux.R")
   + genes.tsv
   + matrix.mtx
   
-### Création de l'objet Seurat
+## Création de l'objet Seurat
 
 - On commence par lire les données en sortie de CellRanger de 10X à l'aide de la fonction `Read10X()`. 
 
@@ -58,6 +60,9 @@ pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_
 - Création ensuite de l'objet Seurat avec `CreateSeuratObject()` :
 
 ```{r}
+#| message: false
+#| warning: false
+
 # Initialize the Seurat object with the raw (non-normalized data).
 pbmc <- CreateSeuratObject(counts = pbmc.data, 
                            project = "pbmc3k", 
@@ -66,7 +71,7 @@ pbmc <- CreateSeuratObject(counts = pbmc.data,
 class(pbmc)
 ```
 
-### Contenu de l'objet Seurat
+## Contenu de l'objet Seurat
 
 ```{r}
 pbmc
@@ -76,7 +81,7 @@ pbmc@assays$RNA$counts[10:20,1:15]
 Assays(pbmc)
 ```
 
-### Contrôle qualité
+## Contrôle qualité
 
 - A la création de l'objet **SO**, calcul de `nCount_RNA` et `nFeature_RNA`, disponibles dans `meta.data`
 
@@ -125,7 +130,7 @@ plot2 <- FeatureScatter(pbmc,
 plot1 + plot2
 ```
 
-### Filtrage des cellules 
+## Filtrage des cellules 
 
 - Filtrage préliminaire des cellules :
 
@@ -145,10 +150,11 @@ pbmc <- NormalizeData(pbmc,
                        normalization.method = "LogNormalize", 
                        scale.factor = 10000)
 pbmc@assays$RNA$data[10:20,1:5]
-# pbmc[["RNA"]]$data[10:20,1:10]
+# pbmc[["RNA"]]$data[10:20,1:5]
 ```
   
 ```{r,echo=F}
+#| message: false
 aux<-data.frame(brut=apply(pbmc@assays$RNA$counts,2,sum),
                 norm=apply(pbmc@assays$RNA$data,2,sum))
 ggplot(melt(aux),aes(x=variable,y=value))+
@@ -167,9 +173,17 @@ pbmc <- FindVariableFeatures(pbmc,
                              selection.method = "vst", 
                              nfeatures = 2000)
 length(VariableFeatures(pbmc))
+```
+
+```{r}
 # Identification du top 10 des HVG
 top10<-head(VariableFeatures(pbmc), 10)
 top10
+```
+
+```{r}
+#| message: false
+#| warning: false
 # plot variable features with and without labels
 plot1 <- VariableFeaturePlot(pbmc)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
@@ -178,17 +192,18 @@ plot2
 
 # Réduction de dimension
 
-### Scale 
+## Données centrées réduites
 
-- Pour chaque cellule, les données sont réduites en utilisant la fonction `ScaleData()` :
+- Pour chaque cellule, les données sont centrées et réduites en utilisant la fonction `ScaleData()` :
 
 ```{r}
-pbmc<-ScaleData(pbmc) #features = Default is variable features J (=2000 par défaut)
+pbmc<-ScaleData(pbmc)           #J=2000 par défaut
 dim(pbmc@assays$RNA$scale.data) # on a plus que J=2000 gènes 
-pbmc[["RNA"]]$scale.data[10:20,1:10]
+pbmc[["RNA"]]$scale.data[10:20,1:5]
 ```
 
-### PCA 
+
+## Analyse en Composantes Principales (PCA) 
 
 - PCA avec la fonction `RunPCA()` :
 
@@ -235,7 +250,7 @@ DimHeatmap(pbmc, dims = 1:2, cells = 500, balanced = TRUE)
 ElbowPlot(pbmc)
 ```
 
-### UMAP
+## UMAP
 
 ```{r}
 #| message: false
@@ -247,7 +262,7 @@ DimPlot(pbmc, reduction = "umap")+NoLegend()
 
 # Clustering
 
-### Pour une résolution fixée
+## Pour une résolution fixée
 
 - Algorithme de Louvain avec résolution de $0.5$
 
@@ -272,7 +287,7 @@ EffPlot(pbmc,resolution=0.5,clustname = "seurat_clusters")
 DimPlot(pbmc, reduction = "umap") 
 ```
 
-### Choix de la résolution ?
+## Choix de la résolution ?
 
 - Faire tourner pour plusieurs valeurs de résolution
 
@@ -293,21 +308,30 @@ head(pbmc@meta.data)
 source("Cours/FunctionsAux.R")
 ari_matrix <- ARI_matrix(pbmc, list_resolutions)
 heatmapari(ari_matrix, list_resolutions)
+```
 
-# Nb de clusters
+```{r}
+#| message: false
+# Nb de classes
 NbCluster_gg(pbmc, list_resolutions)
+```
 
+```{r}
+#| message: false
 # Comparaison visuelle des clusterings obtenus
 p1<-DimPlot(pbmc,reduction = "umap",group.by = "Clusters_0.3")
 p2<-DimPlot(pbmc,reduction = "umap",group.by = "Clusters_0.4")
 p1+p2
+```
 
+```{r}
+#| message: false
 # clustree
 clusterplot<-clustree(pbmc, prefix = "Clusters_")
 clusterplot
 ```
 
-- Pour la suite, on va se focaliser sur le clustering obtenu avec la resolution 0.5.
+- Pour la suite, on va se focaliser sur le clustering obtenu avec la résolution 0.5.
 
 ```{r}
 Idents(pbmc)<-pbmc@meta.data$Clusters_0.5
@@ -318,13 +342,15 @@ DimPlot(pbmc,reduction = "umap")
 
 
 
-# Marker genes
+# Détection des gènes marqueurs 
 
-### Pour le cluster 3
+## Pour la classe 3
 
 - Test de Wilcoxon avec la fonction `FindMarkers(...,test.use="wilcox")`
 
 ```{r}
+#| message: false
+#| warnin: false
 GeneMkWilcox3<-FindMarkers(pbmc,
                            test.use = "wilcox",
                            ident.1 = 3,
@@ -341,6 +367,8 @@ ggplot(GeneMkWilcox3,aes(x=p_val_adj))+
 - Calcul des AUC avec `FindMarkers(...,test.use="roc")`
 
 ```{r}
+#| message: false
+#| warnin: false
 GeneMkAUC3<-FindMarkers(pbmc,
                         test.use = "roc",
                         ident.1 = 3,
@@ -350,7 +378,7 @@ ggplot(GeneMkAUC3,aes(x=myAUC))+
   geom_density()
 ```
 
-- Sélection des gènes marqueurs pour le cluster 3 en appliquant des filtres
+- Sélection des gènes marqueurs pour la classe 3 en appliquant des filtres
 
 ```{r}
 GeneMkAUC3$gene<-rownames(GeneMkAUC3)
@@ -386,7 +414,7 @@ DotPlot(pbmc,features = SelectGene$gene[1:3])
 RidgePlot(pbmc,features = SelectGene$gene[1:3])
 ```
 
-### Marker genes pour toutes les classes 
+## Gènes marqueurs pour toutes les classes 
 
 - Utilisation de la fonction `FindAllMarkers()`
 
@@ -422,6 +450,7 @@ table(GeneMkAUC$cluster)
 
 
 ```{r}
+#| warning: false
 ggplot(GeneMkAUC,aes(x=cluster,y=myAUC))+
   geom_violin(aes(color=cluster))+
   stat_summary(fun.y=function(z) { quantile(z,0.9) }, geom="point", shape=20, size=2)
@@ -438,10 +467,10 @@ GeneMkAUC %>%
 DoHeatmap(pbmc, features = top10$gene) + NoLegend()
 ```
 
-Rem: warning car certains genes dans le top10 ne sont pas des gènes HVG. Or la fonction DoHeatMap s'appuie sur les gènes HVG et les données centrées réduites (scale.data) par défaut. 
+Rem: warning car certains gènes dans le top10 ne sont pas des gènes HVG. Or la fonction DoHeatMap s'appuie sur les gènes HVG et les données centrées réduites (scale.data) par défaut. 
 
 
-### Marker genes entre deux clusters
+## Gènes marqueurs entre deux classes
 
 - Fonction `FindMarkers()` en précisant `ident.1` et `ident.2`
 
@@ -475,11 +504,7 @@ FeaturePlot(pbmc, features = rownames(SelectCl3vsCl5)[1:3])
 ```
 
 ```{r}
-DotPlot(pbmc,features = rownames(SelectCl3vsCl5)[1:10])+
+DotPlot(pbmc[,which(pbmc$Clusters_0.5 %in% c(3,5))],features = rownames(SelectCl3vsCl5)[1:10])+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-```
-
-```{r}
-RidgePlot(pbmc,features = rownames(SelectCl3vsCl5)[1])
 ```
 

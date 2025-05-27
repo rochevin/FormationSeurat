@@ -325,6 +325,8 @@ You can follow the news in the "Updates" section of scRNA-tools.](images/LogoscR
 ```{r}
 #| echo: false
 #| warning: false
+
+library(Seurat)
 pbmc.data <- Read10X(data.dir = "data/pbmc3k_filtered_gene_bc_matrices/filtered_gene_bc_matrices/hg19/")
 
 pbmc <- CreateSeuratObject(counts = pbmc.data, 

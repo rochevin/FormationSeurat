@@ -37,11 +37,14 @@ source("Cours/FunctionsAux.R")
 
 - Les données `ifnb` disponibles dans seurat-data
 
-- Data : human PBMC from two conditions, interferon-stimulated and control cells (stored in the stim column in the object metadata). We will aim to integrate the two conditions together, so that we can jointly identify cell subpopulations across datasets, and then explore how each group differs across conditions
+- Données de cellules sanguines humaines PBMC (Peripheral Blood Mononuclear Cells) dans deux conditions (stimulées par interférons/ contrôle). Les deux conditions sont indiquées dans la colonne `stim` des metadata de l'objet SO. 
 
 ## Objet Seurat depuis seurat data
 
 ```{r}
+#| message: false
+#| warning: false
+
 InstallData("ifnb")
 ifnb <- LoadData("ifnb")
 ```
@@ -59,7 +62,7 @@ Remarque :
 
 - Dans Seurat V5 : un seul objet Seurat contenant les deux conditions, organisé en plusieurs "layers"
 
-- Dans les versions antérieures: un objet Seurat par condition
+- Dans les versions antérieures, un objet Seurat par condition
 
 
 On splitte selon les deux conditions (counts.CTRL et counts.STIM)
@@ -72,16 +75,16 @@ dim(ifnb[["RNA"]]$counts.CTRL)
 dim(ifnb[["RNA"]]$counts.STIM)
 ```
 
-- Une anotation des cellules est stockée dans `meta.data$seurat_annotations` :
+Une anotation des cellules est stockée dans `meta.data$seurat_annotations` :
 
 ```{r}
 head(ifnb@meta.data)
 ```
 
 
-## Construction depuis les données de séquençage (Méthode 1 - `?ifnb`)
+## Construction depuis les données de séquençage (`?ifnb`)
 
-- Pour la récupération des données de séquençage :
+- Pour la récupération des données de séquençage, on a tout d'abord executé les commandes suivantes. Pour vous, elles sont déjà dans le dossier `data`.
 
 ```bash
 cd data/
@@ -91,8 +94,13 @@ rm immune_alignment_expression_matrices.zip
 ```
 
 ```{r}
+# Lecture des deux fichiers de données
 ctrl.data <- data.frame(data.table::fread('data/immune_control_expression_matrix.txt.gz',sep = "\t"),row.names=1)
 stim.data <- data.frame(data.table::fread('data/immune_stimulated_expression_matrix.txt.gz',sep = "\t"),row.names=1)
+```
+
+```{r}
+# Création de objet Seurat
 ctrl <- Seurat::CreateSeuratObject(counts = ctrl.data, project = 'CTRL', min.cells = 5)
 ctrl$stim <- 'CTRL'
 ctrl <- subset(x = ctrl, subset = nFeature_RNA > 500)
@@ -103,9 +111,17 @@ stim <- subset(x = stim, subset = nFeature_RNA > 500)
 
 ifnb2 <- merge(x = ctrl, y = stim)
 Seurat::Project(object = ifnb2) <- 'ifnb'
+```
 
+```{r}
+# Ajout de l'information d'annotation des cellules
 annotations <- readRDS(file = system.file('extdata/annotations/annotations.Rds', package = 'ifnb.SeuratData'))
 ifnb2 <- Seurat::AddMetaData(object = ifnb2, metadata = annotations)
+```
+
+```{r}
+ifnb
+ifnb2
 ```
 
 ```{r}
@@ -117,8 +133,7 @@ rm(ifnb2)
 
 ## Normalisation
 
-- Fait la normalisation comme vu précédemment pour chaque matrice de counts 
-(counts.CTRL --> data.CTRL et counts.STIM--> data.STIM)
+- Fait la normalisation comme vu précédemment pour chaque matrice de comptages (counts.CTRL --> data.CTRL et counts.STIM--> data.STIM)
 
 
 ```{r}
@@ -130,7 +145,7 @@ ifnb@assays$RNA$data.STIM[1:10,1:10]
 
 ## HVG 
 
-- HVG : il le fait pour chaque condition mais on a une répondre globale et un graphe global 
+- HVG : il le fait pour chaque condition puis rend une répondre globale et un graphe global 
   
 ```{r}
 ifnb <- FindVariableFeatures(ifnb)
@@ -234,6 +249,8 @@ rm(ifnb_h,ifnb_cca)
 - Clustering sur les données intégrées avec la résolution $r=0.5$
 
 ```{r}
+#|message: false
+#|warning: false
 ifnb <- FindClusters(ifnb, resolution = 0.5)
 EffPlot(ifnb,clustname = "seurat_clusters",resolution = 0.5)
 ```
@@ -278,9 +295,9 @@ DimPlot(ifnb,
 table(Idents(ifnb),ifnb$seurat_annotations)
 ```
 
-# Gènes marqueurs des types cellulaires conservés
+# Gènes marqueurs des "types cellulaires" conservés
 
-- Déterminer les gènes marqueurs des types cellulaires qui sont conservés entre les conditions
+- Déterminer les gènes marqueurs des "types cellulaires" qui sont conservés entre les conditions
 
 - Utilisation de la fonction `FindConservedMarkers()`
 

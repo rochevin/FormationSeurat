@@ -1132,6 +1132,195 @@ The Harmony algorithm inputs a PCA embedding (Z) of cells, along with their batc
 
 ## Analyse différentielle
 
+
+
+::::{.columns}
+:::{.column}
+
+:::{style="font-size: 150%;"}
+:::{.callout-caution}
+- Il faut bien avoir en tête son design
+- Il faut bien réfléchir à la question à laquelle on souhaite répondre
+:::
+:::
+
+:::{.fragment}
+- Question 1:  déterminer les gènes dont l'expression varie entre les deux conditions (types cellulaires confondus)
+- Question 2 : déterminer les gènes dont l'expression varie entre les deux conditions pour le type cellulaire "CD14 Mono" fixé.
+:::
+
+
+:::
+:::{.column}
+
+:::{.fragment}
+
+
+
+### Beaucoup de méthodes proposées
+
+![](images/Nguyenetal-NatureComm2023.png){width="80%"}
+
+
+
+:::
+
+
+
+
+
+:::
+::::
+
+:::{.fragment}
+
+### Focus sur 4 méthodes
+
+- Naïve : Wilcoxon
+- Par pseudo-bulk : DESeq2
+- Par une méthode spécifique single-cell : NEBULA
+- Par une approche supervisée : Random Forest
+:::
+
+## Analyse fonctionnelle des gènes
+
+L’analyse d’enrichissement de gènes identifie les __voies (pathways) biologiques__ ou les __fonctions__ qui sont __surreprésentées__ dans un ensemble de gènes d’intérêt.
+
+Dans l’analyse fonctionnelle des voies biologiques, le biologiste est __toujours__ l’expert :
+
+* La base de données de pathways est déterminante.
+* Vous décidez de la relation et de la signification biologique des données que vous souhaitez présenter.
+
+:::{.fragment}
+### Pourquoi faire de l'enrichissement ?
+
+:::{style="font-size: 70%;"}
+
+L’interprétation de la liste des gènes différentiellement exprimés peut être difficile dans deux cas :
+
+1) La liste est si longue qu’il devient fastidieux et chronophage d’analyser et d’interpréter chaque gène individuellement.
+2) Certains gènes peuvent avoir de faibles _p-valeurs_, mais pas suffisamment faibles pour atteindre le seuil de signification défini.
+
+**Dans de telles situations, l’analyse d’enrichissement peut être utilisée pour améliorer la compréhension de notre jeu de données.**
+:::
+:::
+
+
+## Approches d'enrichissements
+
+1)  **Analyse de Surreprésentation (ORA - Over Representation Analysis)** : Cette méthode détermine si les gènes différentiellement exprimés sont enrichis dans des voies spécifiques ou des groupes ontologiques. 
+
+2)  **Analyse d’Enrichissement de Groupes de Gènes (GSEA - Gene Set Enrichment Analysis)** : GSEA évalue si un ensemble pré-défini de gènes présente des différences statistiquement significatives entre deux ou plusieurs conditions biologiques. 
+
+:::{.fragment}
+### Différentes sources de voies biologiques
+
+1. **Gene Ontology (GO)**
+2. **KEGG (Kyoto Encyclopedia of Genes and Genomes)**
+3. **WikiPathways**
+4. **Disease Ontology**
+5. **Reactome**
+6. **MSigDB (Molecular Signatures Database)**
+7. **MeSH (Medical Subject Headings)**
+
+:::
+
+## Des noms de gènes aux identifiants 
+
+Les identifiants de gènes sont **uniques, stables et standardisés**, contrairement aux symboles géniques souvent **ambigus**.
+
+Ils permettent :
+
+- Une **annotation fiable** via des bases comme Ensembl  
+- Des **comparaisons inter-espèces**  
+- L’**intégration de données** entre études  
+- Une **reproductibilité** et une **accessibilité à long terme**
+
+:::{.fragment}
+### `bitr`: Biological Id TranslatoR
+
+```{r}
+#| echo: false
+bulk.cond1 <- readRDS("data/bulk.cond1.rds")
+```
+
+```{r}
+#| echo: true
+require(clusterProfiler)
+genes <- bulk.cond1  |> filter(p_val_adj<0.01)  |> rownames()
+eg = bitr(genes, fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
+eg  |> as_tibble()  |>  rmarkdown::paged_table()
+```
+:::
+
+## **Gene Ontology (GO)**
+
+::: {style="font-size: 18px;"}
+
+### Site web : <http://geneontology.org/>
+
+### Description :  
+GO est une base de données très utilisée qui classe les gènes selon trois grandes ontologies :
+
+1. **Molecular Function**  
+   - Activités élémentaires d’un produit génique au niveau moléculaire.
+2. **Biological Process**  
+   - Suite coordonnée d’événements impliquant plusieurs fonctions moléculaires.
+3. **Cellular Component**  
+   - Structures ou localisations cellulaires où les produits géniques sont actifs.
+
+:::{.callout-tip}
+* [Dix conseils pour utiliser la Gene Ontology](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1003343)
+:::
+::: 
+
+
+## Analyse de Surreprésentation (ORA - Over Representation Analysis)
+
+L'**Analyse de Surreprésentation (ORA)** est une méthode courante pour identifier si certaines fonctions ou processus biologiques connus sont **surreprésentés** (= enrichis) dans une liste de gènes obtenue expérimentalement
+
+::::{.columns}
+
+:::{.column}
+
+![From bioinformatics-core-shared-training.github.io/Bulk_RNAseq_Course_Apr22](images/genesetoverlap.svg){fig-align="center"}
+
+:::
+
+:::{.column}
+
+![From bioinformatics-core-shared-training.github.io/Bulk_RNAseq_Course_Apr22](images/contingency.png){fig-align="center" width="400" height="300"}
+
+:::
+
+::::
+
+
+## GO over-representation analysis with `R`
+
+The clusterProfiler package implements `enrichGO()` for gene ontology over-representation test.
+
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+org.db <- org.Hs.eg.db::org.Hs.eg.db
+ego <- enrichGO(gene          = eg$ENTREZID,
+                universe      = NULL,
+                OrgDb         = org.db,
+                keyType = "ENTREZID",
+                ont           = "BP",
+                pAdjustMethod = "BH",
+                pvalueCutoff  = 0.05,
+                qvalueCutoff  = 0.05,
+                readable      = TRUE)
+
+ego |> as_tibble() |>  rmarkdown::paged_table()
+```
+
+
+
 # Pour aller plus loin
 
 ## Spatial transcriptomic (ST)

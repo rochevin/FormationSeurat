@@ -180,8 +180,7 @@ You can follow the news in the "Updates" section of scRNA-tools.
 
 ### Some bio-info-stat. pipelines/workflows
 
-:::: {.columns}
-::: {.column width="50%"}
+
 - [Seurat](https://satijalab.org/seurat/) <!--\cite{Satija15}-->
 ![](images/Seurat.png)
 
@@ -225,8 +224,7 @@ package Bioconductor
 Lun ATL, McCarthy DJ, Marioni JC (2016). “A step-by-step workflow for low-level analysis of single-cell RNA-seq data with Bioconductor.” F1000Res., 5, 2122. doi:10.12688/f1000research.9501.2
 
 
-:::
-::: {.column width="50%"}
+
 - [SINCERA](https://research.cchmc.org/pbge/sincera.html)    
 <!--\cite{GuoSINCERA15}-->
 ![](images/SINCERAschema.png)
@@ -243,10 +241,8 @@ Scedar (Single-cell exploratory data analysis for RNA-Seq) is a reliable and eas
 Zhang Y, Kim MS, Reichenberger ER, Stear B, Taylor DM (2020) Scedar: A scalable Python package for single-cell RNA-seq exploratory data analysis. PLOS Computational Biology 16(4): e1007794. (https://doi.org/10.1371/journal.pcbi.1007794)
 
 
-
 - $\ldots$
-:::
-:::
+
 
 ### Attention au type d'objet
 

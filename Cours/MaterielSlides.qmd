@@ -180,34 +180,69 @@ You can follow the news in the "Updates" section of scRNA-tools.
 
 ### Some bio-info-stat. pipelines/workflows
 
-:::: {.columns}
-::: {.column width="50%"}
+
 - [Seurat](https://satijalab.org/seurat/) <!--\cite{Satija15}-->
 ![](images/Seurat.png)
+
+Hao, et al., Nature Biotechnology 2023 [Seurat v5]
+Hao, Hao, et al., Cell 2021 [Seurat v4]
+Stuart, Butler, et al., Cell 2019 [Seurat v3]
+Butler, et al., Nat Biotechnol 2018 [Seurat v2]
+Satija, Farrell, et al., Nat Biotechnol 2015 [Seurat v1]
+
+Pour récupérer les citations : https://satijalab.org/seurat/authors#citation
+
+Package en R très utilisé, on va se focaliser dessus durant la formation
 
 
 - [SCANPY](https://github.com/theislab/Scanpy)<!--\cite{scanpy:wolf18}-->
 ![](images/Scanpy.png)
 
+Scanpy is a scalable toolkit for analyzing single-cell gene expression data built jointly with anndata. It includes preprocessing, visualization, clustering, trajectory inference and differential expression testing. The Python-based implementation efficiently deals with datasets of more than one million cells.
+
+Package le plus populaire en Python 
+
+SCANPY: large-scale single-cell gene expression data analysis
+F. Alexander Wolf, Philipp Angerer, Fabian J. Theis
+Genome Biology 2018 Feb 06. doi: 10.1186/s13059-017-1382-0.
+
+
 - [Sincell](https://bioconductor.org/packages/release/bioc/html/sincell.html) 
 <!--\cite{Sincell15} -->	![](images/sincell.png)
+
+Package sur BioConductor
+
+Juliá M, Telenti A, Rausell A. Sincell: an R/Bioconductor package for statistical assessment of cell-state hierarchies from single-cell RNA-seq. Bioinformatics. 2015 Oct 15;31(20):3380-2. doi: 10.1093/bioinformatics/btv368. Epub 2015 Jun 22. PMID: 26099264; PMCID: PMC4595899.
 
 - [simpleSingleCell](https://bioconductor.org/packages/release/workflows/html/simpleSingleCell.html)
 <!--\cite{LunWorkflow16}-->
 ![](images/WorkflowLun.png)
 ![](images/simpleSingleCell.png)
-:::
-::: {.column width="50%"}
+
+package Bioconductor
+
+Lun ATL, McCarthy DJ, Marioni JC (2016). “A step-by-step workflow for low-level analysis of single-cell RNA-seq data with Bioconductor.” F1000Res., 5, 2122. doi:10.12688/f1000research.9501.2
+
+
+
 - [SINCERA](https://research.cchmc.org/pbge/sincera.html)    
 <!--\cite{GuoSINCERA15}-->
 ![](images/SINCERAschema.png)
 
+Minzhe Guo, Hui Wang, S. Steve Potter, Jeffrey A. Whitsett, Yan Xu. SINCERA: A Pipeline for Single-Cell RNA-Seq Profiling Analysis. PLoS Comput Biol. 2015 Nov 24;11(11):e1004575. doi: 10.1371/journal.pcbi.1004575. eCollection 2015.   
+
+
+
 - [Scedar](https://github.com/logstar/scedar) <!--\cite{scedar}-->
 ![](images/Scedar.png)
 
+Scedar (Single-cell exploratory data analysis for RNA-Seq) is a reliable and easy-to-use Python package for efficient visualization, imputation of gene dropouts, detection of rare transcriptomic profiles, and clustering of large-scale single cell RNA-seq (scRNA-seq) datasets.
+
+Zhang Y, Kim MS, Reichenberger ER, Stear B, Taylor DM (2020) Scedar: A scalable Python package for single-cell RNA-seq exploratory data analysis. PLOS Computational Biology 16(4): e1007794. (https://doi.org/10.1371/journal.pcbi.1007794)
+
+
 - $\ldots$
-:::
-:::
+
 
 ### Attention au type d'objet
 

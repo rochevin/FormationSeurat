@@ -85,7 +85,7 @@ NbCluster_gg<-function(Seurat_Object,resolutions){
 }
 
 
-EffPlot<-function(Seurat_Object,clustname,resolution){
+EffPlot<-function(Seurat_Object,clustname,resolution=NULL){
   library(Seurat)
   library(ggplot2)
   library(RColorBrewer)
@@ -111,9 +111,21 @@ EffPlot<-function(Seurat_Object,clustname,resolution){
     geom_bar(stat="identity")+
     geom_text(aes(label=Effectif),vjust=1.6,position=position_dodge(0.9),size=3,color="black")+
     theme_minimal()+
-    ggtitle(paste("Total proportion of\n individuals by cluster (r =", resolution, ")"))+
     scale_fill_manual(values = colors)
+    #ggtitle(paste("Total proportion of\n individuals by cluster (r =", resolution, ")"))+
+    
+  if (is.null(resolution)==TRUE){
+    geff<-geff+ggtitle(paste("Total proportion of\n individuals by cluster"))
+  }else{
+    geff<-geff+ggtitle(paste("Total proportion of\n individuals by cluster (r =", resolution, ")"))
+  }
   
   return(geff)
   
 }
+
+
+
+
+
+

@@ -24,7 +24,9 @@ library(reshape2)
 library(tidyverse)
 library(DESeq2)
 library(randomForest)
+library(randomForestVIP)
 library(ggvenn)
+library(pheatmap)
 source("Cours/FunctionsAux.R")
 
 #devtools::install_github('immunogenomics/presto')
@@ -75,7 +77,7 @@ dim(ifnb[["RNA"]]$counts.CTRL)
 dim(ifnb[["RNA"]]$counts.STIM)
 ```
 
-Une anotation des cellules est stockée dans `meta.data$seurat_annotations` :
+Une annotation des cellules est stockée dans `meta.data$seurat_annotations` :
 
 ```{r}
 head(ifnb@meta.data)
@@ -94,12 +96,17 @@ rm immune_alignment_expression_matrices.zip
 ```
 
 ```{r}
+#| message: false
+#| warning: false
 # Lecture des deux fichiers de données
 ctrl.data <- data.frame(data.table::fread('data/immune_control_expression_matrix.txt.gz',sep = "\t"),row.names=1)
 stim.data <- data.frame(data.table::fread('data/immune_stimulated_expression_matrix.txt.gz',sep = "\t"),row.names=1)
 ```
 
 ```{r}
+#| message: false
+#| warning: false
+
 # Création de objet Seurat
 ctrl <- Seurat::CreateSeuratObject(counts = ctrl.data, project = 'CTRL', min.cells = 5)
 ctrl$stim <- 'CTRL'
@@ -139,8 +146,8 @@ rm(ifnb2)
 ```{r}
 ifnb <- NormalizeData(ifnb)
 
-ifnb@assays$RNA$data.CTRL[1:10,1:10]
-ifnb@assays$RNA$data.STIM[1:10,1:10]
+ifnb@assays$RNA$data.CTRL[1:10,1:5]
+ifnb@assays$RNA$data.STIM[1:10,1:5]
 ```
 
 ## HVG 
@@ -174,13 +181,15 @@ ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "pca", reduction.name = "umap.uni
 DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
 ```
 
-# Integration des données 
+# Intégration des données 
 
-## Integration avec `CCA`
+## Intégration avec `CCA`
 
 - Utilisation de la fonction `IntegrateLayers()` avec la méthode CCA = Canonical Correlation Analysis
 
 ```{r}
+#| message: false
+#| warning: false
 ifnb_cca <- IntegrateLayers(object = ifnb, 
                         method = CCAIntegration, 
                         orig.reduction = "pca", 
@@ -207,9 +216,12 @@ p1+p2
 ```
 
 
-## Integration avec `Harmony`
+## Intégration avec `Harmony`
 
 ```{r}
+#| message: false
+#| warning: false
+
 ifnb_h <- IntegrateLayers(object = ifnb, 
                         method = HarmonyIntegration, 
                         orig.reduction = "pca", 
@@ -231,7 +243,7 @@ ifnb_h <- RunUMAP(ifnb_h,
 
 ```{r}
 p3<-DimPlot(ifnb_h, reduction = "umap", group.by = c("stim"))
-p1+p2+p3
+p2+p3
 ```
 
 Pour la suite, on poursuit avec l'intégration par CCA
@@ -251,12 +263,12 @@ rm(ifnb_h,ifnb_cca)
 ```{r}
 #|message: false
 #|warning: false
+
 ifnb <- FindClusters(ifnb, resolution = 0.5)
 EffPlot(ifnb,clustname = "seurat_clusters",resolution = 0.5)
 ```
 
 ```{r}
-# Visualization
 DimPlot(ifnb, 
         reduction = "umap", 
         group.by = c("stim", "seurat_clusters"))
@@ -277,7 +289,7 @@ ggplot(data=Aux, aes(x=Cluster, y=len, fill=Condition)) +
   theme_minimal()
 ```
 
-## Annotation
+## Annotation des cellules
 
 - Une annotation des cellules est disponible 
 
@@ -292,7 +304,7 @@ DimPlot(ifnb,
 - Comparaison avec le clustering obtenu
 
 ```{r}
-table(Idents(ifnb),ifnb$seurat_annotations)
+table(Idents(ifnb),ifnb$seurat_annotations)[c(1:3,5,4,6:10,12,11,14,13),c(1:5,10,6:9,11:13)]
 ```
 
 # Gènes marqueurs des "types cellulaires" conservés
@@ -304,6 +316,9 @@ table(Idents(ifnb),ifnb$seurat_annotations)
 - Exemple : on se focalise sur le type cellulaire NK 
 
 ```{r}
+#| message: false
+#| warning: false
+
 Idents(ifnb) <- "seurat_annotations"
 NK.markers <- FindConservedMarkers(ifnb, 
                                    ident.1 = "NK", 
@@ -326,7 +341,7 @@ DotPlot(ifnb, features = rownames(NK.markers)[1:10],
 
 ## Informations complémentaires
 
-D'abord ajout d'informations pour avoir des "réplicats"
+D'abord ajout d'informations complémentaires pour avoir des "réplicats"
 
 ```{r}
 # load the inferred sample IDs of each cell
@@ -365,7 +380,14 @@ ifnb$celltype.stim <- paste(ifnb$seurat_annotations, ifnb$stim, sep = "_")
 table(ifnb$celltype.stim)
 ```
 
-## Exemple : Question 1
+Création d'une colonne `donor.stim` combinant le donneur et la condition
+
+```{r}
+ifnb$donor.stim<-paste0(ifnb$donor_id,"_",ifnb$stim)
+```
+
+
+## Exemple 1
 
 Question 1:  déterminer les gènes dont l'expression varie entre les deux conditions (types cellulaires confondus)
 
@@ -373,12 +395,17 @@ Question 1:  déterminer les gènes dont l'expression varie entre les deux condi
 ### Par méthode naive (Wilcoxon)
 
 ```{r}
+#| message: false
+#| warning: false
+
 Idents(ifnb)<-ifnb$stim
 res1_Wilcox <- FindMarkers(object = ifnb, 
                            ident.1 = "STIM", 
                            ident.2 = "CTRL",
                            test.use = "wilcox")
-mean(res1_Wilcox$p_val_adj<0.01)
+
+sum(res1_Wilcox$p_val_adj<0.01)
+round(100*mean(res1_Wilcox$p_val_adj<0.01),2)
 
 genetop_wilcox1<-res1_Wilcox %>%
    filter(p_val_adj<0.01)%>%
@@ -391,6 +418,10 @@ DotPlot(ifnb,features=rownames(genetop_wilcox1)[1:10],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
+```{r}
+DotPlot(ifnb,features=rownames(genetop_wilcox1)[1:10],group.by="celltype.stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
 
 ### Par pseudo-bulk (DESeq2)
 
@@ -413,11 +444,15 @@ bulk.cond1 <- FindMarkers(object = pseudo_ifnb1,
                          ident.1 = "STIM", 
                          ident.2 = "CTRL",
                          test.use = "DESeq2")
+head(bulk.cond1)
 ```
 
 - En passant par le package DESeq2
 
 ```{r}
+#| message: false
+#| warning: false
+
 cts1<-as.matrix(pseudo_ifnb1@assays$RNA$counts)
 coldata1<-pseudo_ifnb1@meta.data
 dds1 <- DESeqDataSetFromMatrix(countData = cts1,
@@ -427,7 +462,8 @@ dds1 <- DESeq(dds1,fitType = c("local"))
 resultsNames(dds1) # lists the coefficients
 
 resDEseq1<-results(dds1,name="stim_STIM_vs_CTRL")
-length(which(resDEseq1$padj<0.01)) / nrow(resDEseq1)
+
+round(100*length(which(resDEseq1$padj<0.01))/nrow(resDEseq1),2) 
 ```
 
 ```{r}
@@ -438,12 +474,16 @@ genetopDEseq1<-as.data.frame(resDEseq1) %>%
 ```
 
 ```{r}
+DotPlot(pseudo_ifnb1,features=rownames(genetopDEseq1)[1:10],group.by="stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r}
 DotPlot(ifnb,features=rownames(genetopDEseq1)[1:10],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
 ```{r}
-library(pheatmap)
 pheatmap(pseudo_ifnb1@assays$RNA$scale.data[rownames(genetopDEseq1),],
          cluster_cols = FALSE,       
          scale = "column",              
@@ -455,6 +495,9 @@ pheatmap(pseudo_ifnb1@assays$RNA$scale.data[rownames(genetopDEseq1),],
 ### Par une méthode spécifique single-cell (ex: NEBULA)
 
 ```{r}
+#| message: false
+#| warning: false
+
 library(nebula)
 ifnb_neb1<-scToNeb(obj=ifnb,assay="RNA",id="donor_id",pred=c("stim","seurat_annotations"))
 df1 = model.matrix(~stim+seurat_annotations, data=ifnb_neb1$pred)
@@ -465,7 +508,7 @@ data_g = group_cell(count=ifnb_neb1$count,id=ifnb_neb1$id,pred=df1) # il faut gr
 #re1 = nebula(data_g$count,data_g$id,pred=data_g$pred)
 re1<-readRDS("Exercices/ResNebulaQ1.rds")
 
-mean(p.adjust(re1$summary$p_stimSTIM,method="BH")<0.01)
+round(100*mean(p.adjust(re1$summary$p_stimSTIM,method="BH")<0.01),2)
 
 ifnbNebSumm1<-re1$summary
 ifnbNebSumm1$padjStim<-p.adjust(re1$summary$p_stimSTIM,method="BH")
@@ -498,7 +541,7 @@ ggvenn(list(DEseq2=rownames(genetopDEseq1),
 ```
 
 
-## Exemple : Question 2
+## Exemple 2
 
 Question 2 : déterminer les gènes dont l'expression varie entre les deux conditions pour le type cellulaire "CD14 Mono" fixé.
 
@@ -513,7 +556,7 @@ res2_Wilcox <- FindMarkers(object = ifnb,
                            ident.2 = "CD14 Mono_CTRL",
                            test.use = "wilcox")
 
-mean(res2_Wilcox$p_val_adj<0.01)
+round(100*mean(res2_Wilcox$p_val_adj<0.01),2)
 
 genetop_wilcox2<-res2_Wilcox %>%
    filter(p_val_adj<0.01)%>%
@@ -522,13 +565,24 @@ genetop_wilcox2<-res2_Wilcox %>%
 ```
 
 ```{r}
-DotPlot(ifnb[,ICD14Mono],features=rownames(genetop_wilcox2)[1:10],group.by="stim")+
+DotPlot(ifnb[,ICD14Mono],features=rownames(genetop_wilcox2)[1:10],
+        group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
+
+```{r}
+DotPlot(ifnb[,ICD14Mono],features=rownames(genetop_wilcox2)[1:10],
+        group.by="donor.stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
 
 ### Test de DESeq2
 
 ```{r}
+#| message: false
+#| warning: false
+
 pseudo_ifnb2 <- AggregateExpression(ifnb[,ICD14Mono], 
                                    assays = "RNA", 
                                    return.seurat = T, 
@@ -552,10 +606,19 @@ genetopDEseq2<-as.data.frame(resDEseq2) %>%
    filter(padj<0.01)%>%
    arrange(desc(abs(log2FoldChange)))%>%
    top_n(100)
+```
 
+```{r}
 DotPlot(pseudo_ifnb2,features=rownames(genetopDEseq2)[1:10],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
 
+```{r}
+DotPlot(ifnb[,ICD14Mono],features=rownames(genetopDEseq2)[1:10],group.by="donor.stim")+
+     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r}
 pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopDEseq2),],
          cluster_cols = FALSE,       
          scale = "column",              
@@ -577,7 +640,7 @@ data_g2 = group_cell(count=ifnb_neb2$count,id=ifnb_neb2$id,pred=df2) # il faut g
 #re2 = nebula(data_g2$count,data_g2$id,pred=data_g2$pred)
 re2<-readRDS("Exercices/ResNebulaQ2.rds")
 
-mean(p.adjust(re2$summary$p_stimSTIM,method="BH")<0.01)
+round(100*mean(p.adjust(re2$summary$p_stimSTIM,method="BH")<0.01),2)
 
 ifnbNebSumm2<-re2$summary
 ifnbNebSumm2$padjStim<-p.adjust(re2$summary$p_stimSTIM,method="BH")
@@ -590,11 +653,19 @@ head(ifnbNebSumm2)
 ```{r}
 genetopNeb2<-ifnbNebSumm2%>%
    top_n(100)
+```
 
-DotPlot(ifnb,features=genetopNeb2$gene[1:10],group.by="stim")+
+```{r}
+DotPlot(ifnb[,ICD14Mono],features=genetopNeb2$gene[1:10],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
 
+```{r}
+DotPlot(ifnb[,ICD14Mono],features=genetopNeb2$gene[1:10],group.by="donor.stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
 
+```{r}
 library(pheatmap)
 pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
          cluster_cols = FALSE,       
@@ -605,6 +676,8 @@ pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
 
 ### Par une approche supervisée (ex: Random Forest)
 
+- Random Forest pour prédire STIM / CTRL
+
 ```{r}
 datatrain<-t(as.matrix(ifnb@assays$RNA$scale.data[,ICD14Mono]))
 dataRF<-data.frame(datatrain,
@@ -613,25 +686,41 @@ dataRF<-data.frame(datatrain,
 #resRF<-randomForest(Cl ~ ., data = dataRF,importance=T,proximity=T)
 resRF<-readRDS("Exercices/resNF.rds")
 
-varImpPlot(resRF)
 table(resRF$predicted,dataRF$Cl)
+```
 
+- Importance des variables
+
+```{r}
+p1<-ggvip(resRF,num_var = 20,type=1)
+p2<-ggvip(resRF,num_var = 20,type=2)
+
+p1$vip + p2$vip
+```
+
+```{r}
 genetopRF2<-as.data.frame(resRF$importance)%>%
-      arrange(desc(MeanDecreaseAccuracy))%>%
+      arrange(desc(MeanDecreaseGini))%>%
       top_n(100)
 ```
 
 ```{r}
-DotPlot(ifnb,features=rownames(genetopRF2)[1:10],group.by="stim")+
+DotPlot(ifnb[,ICD14Mono],features=rownames(genetopRF2)[1:10],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
 
-
-#library(pheatmap)
-#pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopRF2),],
-#         cluster_cols = FALSE,       
-#         scale = "row",              
-#         show_rownames = FALSE,
-#         show_colnames = TRUE)
+```{r}
+DotPlot(ifnb[,ICD14Mono],features=rownames(genetopRF2)[1:10],group.by="donor.stim")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+```{r}
+library(pheatmap)
+II<-which(rownames(pseudo_ifnb2@assays$RNA$scale.data) %in% rownames(genetopRF2))
+pheatmap(pseudo_ifnb2@assays$RNA$scale.data[II,],
+         cluster_cols = FALSE,       
+         scale = "row",              
+         show_rownames = FALSE,
+         show_colnames = TRUE)
 ```
 
 ### Comparaison

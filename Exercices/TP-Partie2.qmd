@@ -27,6 +27,7 @@ library(randomForest)
 library(randomForestVIP)
 library(ggvenn)
 library(pheatmap)
+library(clusterProfiler)
 source("Cours/FunctionsAux.R")
 
 #devtools::install_github('immunogenomics/presto')
@@ -734,3 +735,47 @@ ggvenn(list(DEseq2=rownames(genetopDEseq2),
 
 # Analyse fonctionnelle des gènes
 
+## Choix de la liste de gènes à analyser
+
+- Question 1 : déterminer les gènes dont l'expression varie entre les deux conditions (types cellulaires confondus) :
+  - Test de Wilcoxon : `res1_Wilcox`
+  - Avec DESeq2 dans `FindMarkers` : `bulk.cond1` 
+  - DESeq2 : `resDEseq1` 
+  - NEBULA : `ifnbNebSumm1`
+- Question2 : déterminer les gènes dont l'expression varie entre les deux conditions pour le type cellulaire "CD14 Mono" fixé : 
+  - Test de Wilcoxon : `res2_Wilcox`
+  - Avec DESeq2 dans `FindMarkers` : `bulk.cond2` 
+  - DESeq2 : `resDEseq2` 
+  - NEBULA : `ifnbNebSumm2`
+
+
+On choisi les gènes différentiellement exprimés avec **méthode DESeq2 de Seurat** pour la **Question 1** :
+
+
+```{r}
+genes <- bulk.cond1  |> filter(p_val_adj<0.01)  |> rownames()
+genes
+```
+
+Les gènes sont identifiés selon leur nom ou "gene symbol". Pour obtenir la meilleure correspondance possible avec les bases de données, on va les convertir en `entrez id`, qui sont les identifiants de la base de données [`gene` du ncbi](https://www.ncbi.nlm.nih.gov/gene) : 
+
+
+```{r}
+eg = bitr(genes, fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
+eg  |> as_tibble()  |>  rmarkdown::paged_table()
+```
+
+Il existe d'autres identifiants et d'autres méthode de convertir les identifiants, comme la librairie R `biomaRt` et les identifiants `ensembl` : 
+
+
+```{r,eval=F}
+require(biomaRt)
+ensembl <- useEnsembl(biomart = "ensembl", dataset = "hsapiens_gene_ensembl",version =114)
+
+
+gene_conversion <- getBM(attributes = c("ensembl_gene_id","entrezgene_id","hgnc_symbol"),
+      filters = "hgnc_symbol",
+      values = genes, 
+      mart = ensembl)
+gene_conversion %>% as_tibble() %>% rmarkdown::paged_table()
+```

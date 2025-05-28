@@ -666,7 +666,6 @@ DotPlot(ifnb[,ICD14Mono],features=genetopNeb2$gene[1:10],group.by="donor.stim")+
 ```
 
 ```{r}
-library(pheatmap)
 pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
          cluster_cols = FALSE,       
          scale = "row",              
@@ -693,7 +692,6 @@ table(resRF$predicted,dataRF$Cl)
 - Importance des variables
 
 ```{r}
-library("randomForestVIP")
 p1<-ggvip(resRF,num_var = 20,type=1)
 p2<-ggvip(resRF,num_var = 20,type=2)
 
@@ -728,9 +726,11 @@ pheatmap(pseudo_ifnb2@assays$RNA$scale.data[II,],
 ### Comparaison
 
 ```{r}
-library(ggvenn)
 ggvenn(list(DEseq2=rownames(genetopDEseq2),
             Nebula=genetopNeb2$gene,
             Wilcox=rownames(genetop_wilcox2),
             RF=rownames(genetopRF2)))
 ```
+
+# Analyse fonctionnelle des gènes
+

@@ -269,6 +269,9 @@ DimPlot(pbmc, reduction = "umap")+NoLegend()
 - Fonction `FindClusters()` :
 
 ```{r}
+#| message: false
+#| warning: false
+
 pbmc <- FindClusters(pbmc, resolution = 0.5)
 ```
 
@@ -292,6 +295,9 @@ DimPlot(pbmc, reduction = "umap")
 - Faire tourner pour plusieurs valeurs de résolution
 
 ```{r}
+#| message: false
+#| warning: false
+
 list_resolutions<-seq(0.1,1,by=0.1)
 for (r in list_resolutions){
     pbmc <- FindClusters(pbmc, resolution = r, cluster.name = paste0("Clusters_", r))

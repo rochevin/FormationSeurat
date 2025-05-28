@@ -679,7 +679,7 @@ pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
 - Random Forest pour prédire STIM / CTRL
 
 ```{r}
-library("randomForestVIP")
+
 datatrain<-t(as.matrix(ifnb@assays$RNA$scale.data[,ICD14Mono]))
 dataRF<-data.frame(datatrain,
                    Cl = as.factor(ifnb$stim[ICD14Mono]))
@@ -693,6 +693,7 @@ table(resRF$predicted,dataRF$Cl)
 - Importance des variables
 
 ```{r}
+library("randomForestVIP")
 p1<-ggvip(resRF,num_var = 20,type=1)
 p2<-ggvip(resRF,num_var = 20,type=2)
 
@@ -715,7 +716,7 @@ DotPlot(ifnb[,ICD14Mono],features=rownames(genetopRF2)[1:10],group.by="donor.sti
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 ```{r}
-library(pheatmap)
+
 II<-which(rownames(pseudo_ifnb2@assays$RNA$scale.data) %in% rownames(genetopRF2))
 pheatmap(pseudo_ifnb2@assays$RNA$scale.data[II,],
          cluster_cols = FALSE,       
@@ -727,6 +728,7 @@ pheatmap(pseudo_ifnb2@assays$RNA$scale.data[II,],
 ### Comparaison
 
 ```{r}
+library(ggvenn)
 ggvenn(list(DEseq2=rownames(genetopDEseq2),
             Nebula=genetopNeb2$gene,
             Wilcox=rownames(genetop_wilcox2),

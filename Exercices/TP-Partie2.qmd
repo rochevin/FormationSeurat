@@ -679,6 +679,7 @@ pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
 - Random Forest pour prédire STIM / CTRL
 
 ```{r}
+library("randomForestVIP")
 datatrain<-t(as.matrix(ifnb@assays$RNA$scale.data[,ICD14Mono]))
 dataRF<-data.frame(datatrain,
                    Cl = as.factor(ifnb$stim[ICD14Mono]))

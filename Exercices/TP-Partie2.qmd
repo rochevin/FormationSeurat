@@ -666,7 +666,6 @@ DotPlot(ifnb[,ICD14Mono],features=genetopNeb2$gene[1:10],group.by="donor.stim")+
 ```
 
 ```{r}
-library(pheatmap)
 pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
          cluster_cols = FALSE,       
          scale = "row",              
@@ -679,6 +678,7 @@ pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
 - Random Forest pour prédire STIM / CTRL
 
 ```{r}
+
 datatrain<-t(as.matrix(ifnb@assays$RNA$scale.data[,ICD14Mono]))
 dataRF<-data.frame(datatrain,
                    Cl = as.factor(ifnb$stim[ICD14Mono]))
@@ -714,7 +714,7 @@ DotPlot(ifnb[,ICD14Mono],features=rownames(genetopRF2)[1:10],group.by="donor.sti
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 ```{r}
-library(pheatmap)
+
 II<-which(rownames(pseudo_ifnb2@assays$RNA$scale.data) %in% rownames(genetopRF2))
 pheatmap(pseudo_ifnb2@assays$RNA$scale.data[II,],
          cluster_cols = FALSE,       
@@ -731,3 +731,6 @@ ggvenn(list(DEseq2=rownames(genetopDEseq2),
             Wilcox=rownames(genetop_wilcox2),
             RF=rownames(genetopRF2)))
 ```
+
+# Analyse fonctionnelle des gènes
+

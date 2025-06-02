@@ -471,6 +471,42 @@ error models for scRNA-seq.
 Saket Choudhary and Rahul Satija
 -->
 
+
+### Several normalization strategies in Seurat
+
+- In Seurat, function `NormalizeData(object,normalization.method= ...,)`
+
+  + "LogNormalize" : Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale factor ($sf=100000$ default). Then this is log-transformed using $\log(.+1)$
+  
+$$
+\log\left(\frac{x_{gc}}{\underset{g}{\sum} x_{gc}} \times sf +1\right)
+$$
+
+  + "CLR" : Applies a centered log ratio transformation
+  
+$$
+\log\left(\frac{x_{gc}}{\exp\left(\frac{1}{G}\underset{g}{\sum}x_{gc}\mathds{1}_{x_{gc}>0}\right)}  +1\right)
+$$
+
+  + "RC" (Relative counts): Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale factor ($s=1e6$ default). But no log-transformation is applied. 
+
+$$
+\frac{x_{gc}}{\underset{g}{\sum} x_{gc}} \times s
+$$
+
+  + "SCTransform" : implemented in  the function `SCTransform()`. The use of SCTransform replaces the need to run NormalizeData, FindVariableFeatures, or ScaleData (described below). 
+  
+It utilizes the Pearson residuals from NB regression as input to standard dimension reduction techniques (see Hafemeister and Satija, 2019)
+<!--
+https://link.springer.com/article/10.1186/s13059-019-1874-1
+-->
+
+
+
+
+
+
+
 ### Exemple
 
 ```{r}

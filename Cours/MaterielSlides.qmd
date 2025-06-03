@@ -789,6 +789,52 @@ t-Distributed stochastic neighbor embedding is a state-of-the-art dimensionality
 
 Dans Seurat, en raison de la dimension des données, part avec les données de l'ACP (reduction="pca" par défaut). Détermination des voisins par KNN puis t-SNE avec la fonction `RunTSNE()`
 
+
+### t-SNE 
+
+- t-SNE = t-Distributed stochastic neighbor embedding 
+(Maaten and Hinton, 2008; Van Der Maaten, 2014)
+
+- Dimensionality reduction algorithm for non-linear data representation that produces a low-dimensional distribution of high-dimensional data
+
+<!--
+@article{maaten2008visualizing,
+  title={Visualizing data using t-SNE},
+  author={Maaten, Laurens van der and Hinton, Geoffrey},
+  journal={Journal of machine learning research},
+  volume={9},
+  number={Nov},
+  pages={2579--2605},
+  year={2008}
+}
+
+@article{van2014accelerating,
+  title={Accelerating t-SNE using tree-based algorithms},
+  author={Van Der Maaten, Laurens},
+  journal={The journal of machine learning research},
+  volume={15},
+  number={1},
+  pages={3221--3245},
+  year={2014},
+  publisher={JMLR. org}
+}
+-->
+
+![](images/schemetSNE.png)
+<!--
+https://www.scdiscoveries.com/blog/knowledge/what-is-t-sne-plot/
+-->
+
+::: {.callout-warning title="Seurat"}
+
+- function `RunTSNE()` 
+
+- initial data = PCA coordinates  (reduction="pca" default) +  KNN neighbours (`FindNeighbors()`)
+:::
+
+
+### t-SNE example
+
 ```{r}
 #| message: false
 pbmc <- FindNeighbors(pbmc, dims = 1:10)

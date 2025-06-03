@@ -529,35 +529,27 @@ rm(aux)
 ![](images/SO-4.png)  
   
   
-### Identification des gènes HVG
+### High Variable Gene (HVG)
 
-- HVG = High Variable Gene (feature)
+- Goal: identify a subset of features (genes) exhibiting high variability across cells
 
-- Identification of highly variable features
+- In Seurat, function `FindVariableFeatures(object,selection.method=...,)` 
 
-- Exhibit high cell-to-cell variation in the dataset 
+- Method "vst" (by default):
 
-![](captureContent/ExplicationHVG-Seurat.png) 
+  1. Fit a line to the relationship of log(variance) and log(mean) using loess ($\Rightarrow \sigma_g$ for each gene $g$)
+  
+  2. Standardize the feature values (clipped to a maximum value of $\sqrt{C}$)
+  $$
+  z_{gc} = \frac{x_{gc}-\bar{x}_g}{\sigma_g}
+  $$
+  3. For each gene, compute the variance of standardized values across all cells. 
+2,000 genes with the highest standardized variance as “highly variable.” 
 
-> **Feature selection for individual datasets**
-In each dataset, we next aimed to identify a subset of features (e.g., genes) exhibiting high variability across cells, and therefore represent heterogeneous features to prioritize for downstream analysis. Choosing genes solely based on their log-normalized single-cell variance fails to account for the mean-variance relationship that is inherent to single-cell RNA-seq. Therefore, we first applied a variance-stabilizing transformation to correct for this [Mayer et al., 2018; Hafemeister and Satija, 2019].
+- Other options: 
 
-> To learn the mean-variance relationship from the data, we computed the mean and variance of each gene using the unnormalized data (i.e., UMI or counts matrix), and applied log10 transformation to both. We then fit a curve to predict the variance of each gene as a function of its mean, by calculating a local fitting of polynomials of degree 2 (R function loess, span = 0.3). This global fit provided us with a regularized estimator of variance given the mean of a feature. As such, we could use it to standardize feature counts without removing higher-than-expected variation.
-
-> Given the expected variances, we performed the transformation $z_{i,j} = \frac{x_{i,j} - \bar{x}_i}{\sigma_i}$
-
-> where $z_{i,j}$ is the standardized value of feature $i$ in cell $j$, $x_{i,j}$ is the raw value of feature $i$ in cell $j$, $\bar{x}_i$ is the mean raw value for feature $i$, and $\sigma_i$ is the expected standard deviation of feature $i$ derived from the global mean-variance fit. To reduce the impact of technical outliers, we clipped the standardized values to a maximum value of $\sqrt{N}$, where $N$ is the total number of cells. For each gene, we then computed the variance of standardized values across all cells. This variance represents a measure of single-cell dispersion after controlling for mean expression, and we use it directly to rank the features. Unless otherwise noted, we selected the 2,000 genes with the highest standardized variance as “highly variable.” This procedure is implemented in the FindVariableFeatures function in Seurat v3 (selection.method = “vst”).
-
-Stuart et al. (Cell, 2019). Comprehensive Integration of Single-Cell Data 
-
-
-Dans la fonction `FindVariableFeatures(object,selection.method=...,)` : 
-
-- "vst": First, fits a line to the relationship of log(variance) and log(mean) using local polynomial regression (loess). Then standardizes the feature values using the observed mean and expected variance (given by the fitted line). Feature variance is then calculated on the standardized values after clipping to a maximum (see clip.max parameter).
-
-- "mean.var.plot" (mvp): First, uses a function to calculate average expression (mean.function) and dispersion (dispersion.function) for each feature. Next, divides features into num.bin (default 20) bins based on their average expression, and calculates z-scores for dispersion within each bin. The purpose of this is to identify variable features while controlling for the strong relationship between variability and average expression
-
-- "dispersion" (disp): selects the genes with the highest dispersion values
+  + "mean.var.plot" (mvp)
+  + "dispersion" (disp): 
 
 ```{r}
 pbmc <- FindVariableFeatures(pbmc, 
@@ -573,7 +565,9 @@ plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 plot2
 ```
 
-
+<!--
+![](captureContent/ExplicationHVG-Seurat.png)
+-->
 
 ## Réduction de dimension
 

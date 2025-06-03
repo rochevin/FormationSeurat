@@ -392,7 +392,7 @@ VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA"), ncol = 2)
 
 ## Contrôle qualité
 
-### Additional metrics for plotting
+### Additional metrics for plotting
 
 
 ::::{.columns}
@@ -448,26 +448,37 @@ VlnPlot(pbmc, features = c("percent.mt"))
 ## Normalization in Seurat
 
 
-### Many possible strategies for normalized data
+### Several normalization strategies in Seurat (Part I)
 
 - In Seurat, function `NormalizeData(object,normalization.method= ...,)`
 
-  + "LogNormalize" : Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale.factor. This is then natural-log transformed using log1p
+  + "LogNormalize" : Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale factor ($sf=100000$ default). Then this is log-transformed using $\log(.+1)$
+  
+$$
+\log\left(\frac{x_{gc}}{\underset{g}{\sum} x_{gc}} \times sf +1\right)
+$$
 
   + "CLR" : Applies a centered log ratio transformation
   
-  ```r
-  clr_function <- function(x) {
-          return(log1p(x = x / (exp(x = sum(log1p(x = x[x > 0]), na.rm   >= TRUE) / length(x = x)))))}
-  log1p(x) computes log(1+x) accurately also for |x| << 1.
-  ```
+$$
+\log\left(\frac{x_{gc}}{\exp\left(\frac{1}{G}\underset{g}{\sum}x_{gc}\mathds{1}_{x_{gc}>0}\right)}  +1\right)
+$$
 
-  + "RC" (Relative counts): Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale.factor. 
-  No log-transformation is applied. 
-  For counts per million (CPM) set scale.factor = 1e6
+## Normalization in Seurat
 
-  + "SCTransform" : il faut passer par une autre fonction `SCTransform()`: The use of SCTransform replaces the need to run NormalizeData, FindVariableFeatures, or ScaleData (described below.). In Seurat v5, SCT v2 is applied by default. You can revert to v1 by setting vst.flavor = 'v1'
+### Several normalization strategies in Seurat (Part II)
 
+- In Seurat, function `NormalizeData(object,normalization.method= ...,)`
+
+  + "RC" (Relative counts): Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale factor ($s=1e6$ default). But no log-transformation is applied. 
+
+$$
+\frac{x_{gc}}{\underset{g}{\sum} x_{gc}} \times s
+$$
+
+  + "SCTransform" : implemented in  the function `SCTransform()`. The use of SCTransform replaces the need to run NormalizeData, FindVariableFeatures, or ScaleData (described below). 
+  
+It utilizes the Pearson residuals from NB regression as input to standard dimension reduction techniques (see Hafemeister and Satija, 2019)
 
 ## Example
 
@@ -481,20 +492,27 @@ VlnPlot(pbmc, features = c("percent.mt"))
 ![](images/SO-4.png){width="90%" fig-align="center"}
   
   
-## Identification des gènes HVG
+## High Variable Gene (HVG)
 
-- Identification of High Variable Gene (HVG)
-- Exhibit high cell-to-cell variation in the dataset 
+- Goal: identify a subset of features (genes) exhibiting high variability across cells
 
+- In Seurat, function `FindVariableFeatures(object,selection.method=...,)` 
 
+- Method "vst" (by default):
 
-Dans la fonction `FindVariableFeatures(object,selection.method=...,)` : 
+  1. Fit a line to the relationship of log(variance) and log(mean) using loess ($\Rightarrow \sigma_g$ for each gene $g$)
+  
+  2. Standardize the feature values (clipped to a maximum value of $\sqrt{C}$)
+  $$
+  z_{gc} = \frac{x_{gc}-\bar{x}_g}{\sigma_g}
+  $$
+  3. For each gene, compute the variance of standardized values across all cells. 
+2,000 genes with the highest standardized variance as “highly variable.” 
 
-- "vst": First, fits a line to the relationship of log(variance) and log(mean) using local polynomial regression (loess). Then standardizes the feature values using the observed mean and expected variance (given by the fitted line). Feature variance is then calculated on the standardized values after clipping to a maximum (see clip.max parameter).
+- Other options: 
 
-- "mean.var.plot" (mvp): First, uses a function to calculate average expression (mean.function) and dispersion (dispersion.function) for each feature. Next, divides features into num.bin (default 20) bins based on their average expression, and calculates z-scores for dispersion within each bin. The purpose of this is to identify variable features while controlling for the strong relationship between variability and average expression
-
-- "dispersion" (disp): selects the genes with the highest dispersion values
+  + "mean.var.plot" (mvp)
+  + "dispersion" (disp)
 
 ## Identification des gènes HVG
 
@@ -759,27 +777,33 @@ DimPlot(pbmc, reduction = "pca") + NoLegend()
 DimHeatmap(pbmc, dims = 1:2, cells = 500, balanced = TRUE)
 ``` 
 
-![](images/heatmap_pca.png){width="90%"}
+![](images/heatmap_pca.png){width="80%"}
 :::
 ::::
 
 
-## t-SNE
+## t-SNE 
 
-- Méthode de réduction de dimension non-linéaire (Maaten and Hinton, 2008; Van Der Maaten, 2014)
+- t-SNE = t-Distributed stochastic neighbor embedding 
+(Maaten and Hinton, 2008; Van Der Maaten, 2014)
 
-::: {.callout-note title="t-SNE"}
-t-Distributed stochastic neighbor embedding is a state-of-the-art dimensionality reduction algorithm for non-linear data representation that produces a low-dimensional distribution of high-dimensional data (Maaten and Hinton, 2008; Van Der Maaten, 2014). It excels at revealing local structure in high-dimensional data. t-SNE is based on the SNE (Hinton and Roweis, 2002), which starts from converting the high-dimensional Euclidean distances between data points into conditional probabilities that represent similarities. The main idea and the modifications of t-SNE are (1) the symmetric version of SNE and (2) using a Student's t distribution to compute the similarity between two points in the low-dimensional space.
+- Dimensionality reduction algorithm for non-linear data representation that produces a low-dimensional distribution of high-dimensional data
 
-:::
+![](images/schemetSNE.png){width="90%" fig-align="center"}
 
-![](images/schemetSNE.png)
 
-::: {.callout-warning}
-Dans Seurat, en raison de la dimension des données, part avec les données de l'ACP (reduction="pca" par défaut). Détermination des voisins par KNN puis t-SNE avec la fonction `RunTSNE()`
-:::
+
 
 ## t-SNE with Seurat
+
+::: {.callout-warning title="Seurat"}
+
+- function `RunTSNE()` 
+
+- initial data = PCA coordinates  (reduction="pca" default) +  KNN neighbours (`FindNeighbors()`)
+:::
+
+### t-SNE example
 
 ```r
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
@@ -795,7 +819,7 @@ DimPlot(pbmc, reduction = "tsne")+NoLegend()
 :::
 :::{.column}
 
-![](images/SO-8.png)
+![](images/SO-8.png){width="90%"}
 :::
 ::::
 

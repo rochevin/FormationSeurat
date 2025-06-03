@@ -485,7 +485,7 @@ $$
   + "CLR" : Applies a centered log ratio transformation
   
 $$
-\log\left(\frac{x_{gc}}{\exp\left(\frac{1}{G}\underset{g}{\sum}x_{gc}\mathds{1}_{x_{gc}>0}\right)}  +1\right)
+\log\left(\frac{x_{gc}}{\exp\left(\frac{1}{G}\underset{g}{\sum}x_{gc}\mathbb{1}_{x_{gc}>0}\right)}  +1\right)
 $$
 
   + "RC" (Relative counts): Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale factor ($s=1e6$ default). But no log-transformation is applied. 
@@ -774,7 +774,7 @@ Mais probleme de l'ACP sur les données scRNAseq
 - Elle est sensible à la sparsité des données scRNAseq 
 - C'est utilisé pour réduire le jeu de données pour certaines méthodes dans la suite de l'étude
 
-
+<!--
 ### t-SNE
 
 - Méthode de réduction de dimension non-linéaire 
@@ -782,13 +782,12 @@ Mais probleme de l'ACP sur les données scRNAseq
 
 - 
 
-
 t-Distributed stochastic neighbor embedding is a state-of-the-art dimensionality reduction algorithm for non-linear data representation that produces a low-dimensional distribution of high-dimensional data (Maaten and Hinton, 2008; Van Der Maaten, 2014). It excels at revealing local structure in high-dimensional data. t-SNE is based on the SNE (Hinton and Roweis, 2002), which starts from converting the high-dimensional Euclidean distances between data points into conditional probabilities that represent similarities. The main idea and the modifications of t-SNE are (1) the symmetric version of SNE and (2) using a Student’s t distribution to compute the similarity between two points in the low-dimensional space.
 
 ![](images/schemetSNE.png)
 
 Dans Seurat, en raison de la dimension des données, part avec les données de l'ACP (reduction="pca" par défaut). Détermination des voisins par KNN puis t-SNE avec la fonction `RunTSNE()`
-
+-->
 
 ### t-SNE 
 
@@ -825,7 +824,7 @@ Dans Seurat, en raison de la dimension des données, part avec les données de l
 https://www.scdiscoveries.com/blog/knowledge/what-is-t-sne-plot/
 -->
 
-::: {.callout-warning title="Seurat"}
+::: {.callout-warning title="Seurat" icon=false}
 
 - function `RunTSNE()` 
 
@@ -833,7 +832,7 @@ https://www.scdiscoveries.com/blog/knowledge/what-is-t-sne-plot/
 :::
 
 
-### t-SNE example
+### Example
 
 ```{r}
 #| message: false
@@ -841,7 +840,16 @@ pbmc <- FindNeighbors(pbmc, dims = 1:10)
 pbmc <- RunTSNE(pbmc, dims = 1:10)
 DimPlot(pbmc, reduction = "tsne")+NoLegend()
 ```
+
+::::{.columns}
+:::{.column}
+![](images/t-sne.png)
+:::
+:::{.column}
 ![](images/SO-8.png)
+:::
+::::
+
 
 ### UMAP
 
@@ -855,7 +863,6 @@ The algorithm is based on three assumptions about the data: (a) the data are uni
 
 
 
-
 ```{r}
 #| message: false
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
@@ -864,6 +871,89 @@ DimPlot(pbmc, reduction = "umap")+NoLegend()
 ```
 
 ![](images/SO-9.png)
+
+<!--
+https://biostatsquid.com/pca-umap-tsne-comparison/
+
+UMAP, also non-linear, is similar to t-SNE in preserving local structure but is faster, scalable, and tends to maintain both local and global relationships better. UMAP is often preferred for larger datasets or when maintaining both global and local patterns is crucial, while t-SNE might be used for finer cluster analysis in smaller datasets. PCA is generally faster and preferred for preliminary analysis or when the relationships in the data are primarily linear.
+
+
+-->
+
+
+### UMAP
+
+- UMAP = **Uniform manifold approximation and projection** 
+
+- It is a general non-linear dimension reduction method
+
+- Compared with t-SNE, UMAP retains more global structure with superior run-time performance 
+
+(McInnes et al., 2018; Becht et al., 2019).
+
+<!--
+@article{mcinnes2018umap,
+  title={Umap: Uniform manifold approximation and projection for dimension reduction},
+  author={McInnes, Leland and Healy, John and Melville, James},
+  journal={arXiv preprint arXiv:1802.03426},
+  year={2018}
+}
+
+@article{becht2019dimensionality,
+  title={Dimensionality reduction for visualizing single-cell data using UMAP},
+  author={Becht, Etienne and McInnes, Leland and Healy, John and Dutertre, Charles-Antoine and Kwok, Immanuel WH and Ng, Lai Guan and Ginhoux, Florent and Newell, Evan W},
+  journal={Nature biotechnology},
+  volume={37},
+  number={1},
+  pages={38--44},
+  year={2019},
+  publisher={Nature Publishing Group}
+}
+-->
+
+![](images/UMAPalgo.png)
+
+- For more details : 
+
+  + A youtube video describing the process can be found [here](https://www.youtube.com/watch?v=jth4kEvJ3P8).
+
+  + A comparison between PCA, t-SNE and UMAP can be found [here](https://biostatsquid.com/pca-umap-tsne-comparison/)
+
+### Example
+
+::: {.callout-warning title="Seurat" icon=false}
+
+- function `RunUMAP()` 
+
+- initial data = PCA coordinates  (reduction="pca" default) +  KNN neighbours (`FindNeighbors()`)
+:::
+
+
+```r
+pbmc <- FindNeighbors(pbmc, dims = 1:10)
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+DimPlot(pbmc, reduction = "umap")+NoLegend()
+```
+
+
+::::{.columns}
+:::{.column}
+![](images/pbmc_umap_1.png)
+
+:::
+:::{.column}
+
+![](images/SO-9.png)
+
+:::
+::::
+
+
+
+
+
+
+
 
 ## Clustering
 

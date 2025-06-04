@@ -28,6 +28,8 @@ library(randomForestVIP)
 library(ggvenn)
 library(pheatmap)
 library(clusterProfiler)
+library(enrichplot)
+library(org.Hs.eg.db)
 source("Cours/FunctionsAux.R")
 
 #devtools::install_github('immunogenomics/presto')
@@ -755,13 +757,15 @@ On choisi les gènes différentiellement exprimés avec **méthode DESeq2 de Seu
 ```{r}
 genes <- bulk.cond1  |> filter(p_val_adj<0.01)  |> rownames()
 genes
+foldChange <- bulk.cond1|> filter(p_val_adj<0.01)  |>  pull(avg_log2FC)
+names(foldChange) <- genes
 ```
 
 Les gènes sont identifiés selon leur nom ou "gene symbol". Pour obtenir la meilleure correspondance possible avec les bases de données, on va les convertir en `entrez id`, qui sont les identifiants de la base de données [`gene` du ncbi](https://www.ncbi.nlm.nih.gov/gene) : 
 
 
 ```{r}
-eg = bitr(genes, fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
+eg = clusterProfiler::bitr(genes, fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
 eg  |> as_tibble()  |>  rmarkdown::paged_table()
 ```
 
@@ -780,8 +784,24 @@ gene_conversion <- getBM(attributes = c("ensembl_gene_id","entrezgene_id","hgnc_
 gene_conversion %>% as_tibble() %>% rmarkdown::paged_table()
 ```
 
+## Les outils d'analyse d'enrichissement
 
-### Différentes sources de voies biologiques
+
+### Outils en ligne
+
+* [WEB-based GEne SeT AnaLysis Toolkit (WebGestalt)](https://www.webgestalt.org/)
+* [gsea-msigdb](https://www.gsea-msigdb.org/gsea/index.jsp)
+
+### Packages R 
+
+* [`ClusterProfiler`](https://guangchuangyu.github.io/software/clusterProfiler/)
+* `hypeR`
+* `gprofiler2`
+* `fgsea` (utilisé en interne par ClusterProfiler)
+
+Dans ce TP nous utiliserons uniquement `ClusterProfiler` car il est très complet et bien documenté (voir [ici](https://yulab-smu.top/biomedical-knowledge-mining-book/) et [ici](https://yulab-smu.top/contribution-knowledge-mining/))
+
+## Différentes sources de voies biologiques
 
 1. **Gene Ontology (GO)**
 2. **KEGG (Kyoto Encyclopedia of Genes and Genomes)**
@@ -792,39 +812,113 @@ gene_conversion %>% as_tibble() %>% rmarkdown::paged_table()
 7. **MeSH (Medical Subject Headings)**
 
 
+Dans ce TP nous utiliserons uniquement la **Gene Ontology**, mais c'est possible [d'utiliser les autres avec `ClusterProfiler`](https://yulab-smu.top/biomedical-knowledge-mining-book/enrichment-overview.html)
+
+
 ### **Gene Ontology (GO)**
 
-### Website: <http://geneontology.org/>
 
-### Description: 
-GO is a widely used database that categorizes genes into three main ontologies: molecular function, biological process, and cellular component. It provides a standardized vocabulary to describe gene functions and interactions, allowing researchers to annotate and analyze gene sets in a structured manner.
+### Site web : <http://geneontology.org/>
 
+### Description :  
+GO est une base de données très utilisée qui classe les gènes selon trois grandes ontologies :
 
-1. **Molecular Function**
-   - Describes the elemental activities of a gene product at the molecular level.
-2. **Biological Process**
-   - Represents sets of molecular events or biological pathways achieved by one or more gene products.
-   - Biological process terms describe the larger, coordinated series of events that involve multiple molecular functions.
-3. **Cellular Component**
-   - Refers to the subcellular structures, locations, and macromolecular complexes in which gene products are active.
-   - Cellular component terms describe the physical compartments or structures where gene products function.
+1. **Molecular Function**  
+   - Activités élémentaires d’un produit génique au niveau moléculaire.
+2. **Biological Process**  
+   - Suite coordonnée d’événements impliquant plusieurs fonctions moléculaires.
+3. **Cellular Component**  
+   - Structures ou localisations cellulaires où les produits géniques sont actifs.
 
 
-:::{.callout-tip}
-* [Ten Quick Tips for Using the Gene Ontology](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1003343)
-:::
 
-### `bitr`: Biological Id TranslatoR
+## Approches d'enrichissements
+
+1)  **Analyse de Surreprésentation (ORA - Over Representation Analysis)** : Cette méthode détermine si les gènes différentiellement exprimés sont enrichis dans des voies spécifiques ou des groupes ontologiques. 
+
+2)  **Analyse d’Enrichissement de Groupes de Gènes (GSEA - Gene Set Enrichment Analysis)** : GSEA évalue si un ensemble pré-défini de gènes présente des différences statistiquement significatives entre deux ou plusieurs conditions biologiques. 
+
+Dans `ClusterProfiler`, les fonctions `gseGO()` et `enrichGO` permettent d'utiliser ces deux méthodes avec la **Gene Ontology**
+
+## Enrichissement par analyse de sur-représentation (ORA - Over Representation Analysis)
+
+
+L'**Analyse de Surreprésentation (ORA)** est une méthode courante pour identifier si certaines fonctions ou processus biologiques connus sont **surreprésentés** (= enrichis) dans une liste de gènes obtenue expérimentalement
+
+![From bioinformatics-core-shared-training.github.io/Bulk_RNAseq_Course_Apr22](images/genesetoverlap.svg){fig-align="center"}
+
+![From bioinformatics-core-shared-training.github.io/Bulk_RNAseq_Course_Apr22](images/contingency.png){fig-align="center" width="400" height="300"}
+
+## Analyse GO de sur-représentation avec `R` et `clusterProfiler`
+
+On utilise `enrichGO()` sur nos gènes différentiellement exprimés (objet `eg`).
+
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: true
+org.db <- org.Hs.eg.db::org.Hs.eg.db
+ego <- enrichGO(gene          = eg$ENTREZID,
+                universe      = NULL,
+                OrgDb         = org.db,
+                keyType = "ENTREZID",
+                ont           = "BP",
+                pAdjustMethod = "BH",
+                pvalueCutoff  = 0.05,
+                qvalueCutoff  = 0.05,
+                readable      = TRUE)
+
+ego |> as_tibble() |>  rmarkdown::paged_table()
+```
+
+
+### Méthodes de visualisation des résultats d'enrichissement
+
+Voir [ici](https://yulab-smu.top/biomedical-knowledge-mining-book/enrichplot.html?q=heatplot#heatmap-like-functional-classification) pour la liste complète
+
+#### Dotplot
 
 ```{r}
 #| echo: false
-bulk.cond1 <- readRDS("data/bulk.cond1.rds")
+
+dotplot(ego,showCategory=10)
+```
+
+#### Gene-Concept Network
+
+Récupérer la valeur du fold-change :
+
+```{r}
+foldChange <- foldChange  |> enframe()  |> left_join(eg,by = c("name"="SYMBOL"))  |> dplyr::select(ENTREZID,value)  |> drop_na()  |> deframe()
 ```
 
 ```{r}
-#| echo: true
-require(clusterProfiler)
-genes <- bulk.cond1  |> filter(p_val_adj<0.01)  |> rownames()
-eg = bitr(genes, fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-eg  |> as_tibble()  |>  rmarkdown::paged_table()
+#| echo: false
+#| warning: false
+#| message: false
+y <- setReadable(ego, OrgDb = org.db, keyType="ENTREZID")
+p1 <- cnetplot(y,foldChange = foldChange)
+print(p1)
+```
+
+#### UpSet plots
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+upsetplot(ego)
+```
+
+#### Gene-Concept Network
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+y <- setReadable(ego, OrgDb = org.db, keyType="ENTREZID")
+p2 <- heatplot(y, foldChange=foldChange, showCategory=5)
+print(p2)
 ```

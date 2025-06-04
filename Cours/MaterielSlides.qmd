@@ -1461,18 +1461,39 @@ https://nbisweden.github.io/workshop-scRNAseq/labs/seurat/seurat_03_integration.
 - Data `ifnb` available in seurat-data
 
 ```{r}
-#| 
+#| warning: false
+#| message: false
 InstallData("ifnb")
 ifnb <- LoadData("ifnb")
 ```
 
 - The object contains data from human PBMC from two conditions, interferon-stimulated and control cells (stored in the stim column in the object metadata). 
 
+```{r}
+ifnb
+dim(ifnb)    
+table(ifnb$orig.ident) #table(ifnb$stim)
+```
+
 - Aim: integrate the two conditions, so that we can jointly identify cell subpopulations across datasets, and then explore how each group differs across conditions
 
-- Remark: 
-In previous versions of Seurat, we would require the data to be represented as two different Seurat objects. In Seurat v5, we keep all the data in one object, but simply split it into multiple ‘layers’. To learn more about layers, check out our Seurat object interaction vignette.
+### Multiple "layers"
 
+::: {.callout-warning title="Seurat" icon=false}
+- In Seurat v5, all the data in one Seurat object, but simply split it into multiple layers 
+
+- In previous versions, data had to be represented in different Seurat objects.. 
+:::
+
+```{r}
+ifnb[["RNA"]] <- split(ifnb[["RNA"]], f = ifnb$stim)
+ifnb
+
+dim(ifnb[["RNA"]]$counts.CTRL)
+dim(ifnb[["RNA"]]$counts.STIM)
+```
+
+<!--
 #### With default command from seurat data
 
 ```{r}
@@ -1500,11 +1521,19 @@ ifnb
 dim(ifnb[["RNA"]]$counts.CTRL)
 dim(ifnb[["RNA"]]$counts.STIM)
 ```
+-->
 
+### From count matrices to Seurat object
 
-#### Use count matrix as input instead of object
+- Create a Seurat object for each condition with `CreateSeuratObject()`
 
+- Create a common variable "condition" (here `stim` in the example) 
 
+- Merge the Seurat object with `merge()`
+
+- See the construction of `ifnb` in exercice. 
+
+<!--
 ##### Method 1 from `?ifnb`
 
 ```bash
@@ -1592,34 +1621,54 @@ table(colnames(ctrl[["RNA"]]) %in%colnames(stim[["RNA"]]))
 FALSE  TRUE 
  7926   112 
 ```
-
+-->
 
 
 ### Normalization
 
-- Fait la normalisation comme vu précédemment pour chaque matrice de counts 
-(counts.CTRL --> data.CTRL et counts.STIM--> data.STIM)
-
+- Performs normalization as described above for each counts matrix 
+(data.CTRL and data.STIM)
 
 ```{r}
 ifnb <- NormalizeData(ifnb)
+```
 
+::::{.columns}
+:::{.column width="50%"}
+```{r}
 ifnb@assays$RNA$data.CTRL[1:10,1:10]
+```
+:::
+:::{.column width="50%"}
+```{r}
 ifnb@assays$RNA$data.STIM[1:10,1:10]
 ```
+:::
+::::
 
 ### HVG 
 
-- HVG : il le fait pour chaque condition 
+- High variable genes are computed for each condition 
 
-mais on a une répondre globale et un graphe global (pas par condition ?!)
-  
 ```{r}
 ifnb <- FindVariableFeatures(ifnb)
+```
 
+::::{.columns}
+:::{.column width="50%"}
+```{r}
 head(VariableFeatures(ifnb,assay="RNA",layer="counts.CTRL"))
+```
+:::
+:::{.column width="50%"}
+```{r}
 head(VariableFeatures(ifnb,assay="RNA",layer="counts.STIM"))
+```
+:::
+::::
 
+```{r}
+#|echo: false
 top10<-head(VariableFeatures(ifnb), 10)
 plot1<-VariableFeaturePlot(ifnb)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)

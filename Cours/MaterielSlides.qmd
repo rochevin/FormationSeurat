@@ -38,6 +38,9 @@ library(ggplot2)
 library(mvtnorm)
 library(FactoMineR)
 library(gridExtra)
+
+source("Cours/FunctionsAux.R")
+# devtools::install_github('satijalab/seurat-data')
 ```
 
 ### Objectifs de la formation
@@ -929,7 +932,7 @@ UMAP, also non-linear, is similar to t-SNE in preserving local structure but is 
 :::
 
 
-```r
+```{r}
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
 pbmc <- RunUMAP(pbmc, dims = 1:10)
 DimPlot(pbmc, reduction = "umap")+NoLegend()
@@ -955,9 +958,9 @@ DimPlot(pbmc, reduction = "umap")+NoLegend()
 
 
 
-## Clustering
+## Cells clustering
 
-### Principe / objectif du clustering
+### Clustering objective
 
 - Goal : organizing cells into groups whose members are similar in some way 
 - Fundamental question : What is meant by "similar cells"? 
@@ -981,40 +984,46 @@ DimPlot(pbmc, reduction = "umap")+NoLegend()
 
 ![](images/TableauReviewMethodesClust.png)
 
-### Dans Seurat
+### Louvain's algorithm in Seurat
 
+::: {.callout-note title="Steps of Louvain algo" icon=false}
 - Calculate k-nearest neighbors and construct the SNN graph
 (based on Euclidean distance in PCA space)
-- Optimize a modularity function to determine clusters - Louvain’s
-algorithm
-- Sensitive choice of the resolution parameter
+- Optimize a modularity function to determine clusters 
+- Sensitive choice of the resolution parameter $r$
 (involve the number of clusters K)
+:::
 
--   explication du principe de Louvain
 ![](images/Louvain.png)
--   nécessite un paramètre de résolution (pas nb de clusters K)
--   Fonctions `FindNeighbour()` puis  `FindCluster()`
 
-### Exemple
+::: {.callout-warning title="Seurat" icon=false}
+-   Functions `FindNeighbour()` +  `FindCluster()`
+:::
 
-- Clustering pour une résolution de $0.5$
+### Example
+
+- Clustering for resolution $0.5$
 
 ```{r}
 pbmc <- FindClusters(pbmc, resolution = 0.5)
 ```
 
-![](images/SO-10.png)
 
-- Analyse du clustering obtenu
-
+:::: {.columns}
+::: {.column width="50%"}
 ```{r}
 table(pbmc@meta.data$seurat_clusters)
-DimPlot(pbmc, reduction = "umap") # par défaut il colore par seurat_clusters qui n'existait pas avant ?!
+DimPlot(pbmc, reduction = "umap") 
 ```
+:::
+::: {.column width="50%"}
+![](images/SO-10.png)
+:::
+::::
 
-### Choix de la résolution ?
+### Choice of the resolution?
 
-- Faire tourner pour plusieurs valeurs de résolution
+- Run clustering for several resolution values 
 
 ```{r}
 list_resolutions<-seq(0.1,1,by=0.1)
@@ -1024,10 +1033,36 @@ for (r in list_resolutions){
 head(pbmc@meta.data)
 ```
 
-- Lien entre les clusterings obtenus via l'indicateur ARI (Adjusted Rand Index) et visuellement avec le package `clustree` par exemple 
+```{r}
+NbCluster_gg(pbmc, list_resolutions)
+```
+
+
+- Comparison of the several clusterings using
+
+:::: {.columns}
+::: {.column width="50%"}
++ Adjusted Rand Index (ARI)
+
+```{r}
+source("Cours/FunctionsAux.R")
+ari_matrix <- ARI_matrix(pbmc, list_resolutions)
+heatmapari(ari_matrix, list_resolutions)
+```
+:::
+::: {.column width="50%"}
++ `clustree` for visualization
+```{r}
+clusterplot<-clustree(pbmc, prefix = "Clusters_")
+clusterplot
+```
+:::
+::::
 
 ```{r}
 #| message: false
+#| eval: false
+#| echo: false
 
 # Visualisation ARI - fonctions auxiliaires
 source("Cours/FunctionsAux.R")
@@ -1047,52 +1082,78 @@ clusterplot<-clustree(pbmc, prefix = "Clusters_")
 clusterplot
 ```
 
+<!--
 - On peut tous les stocker dans objet SO mais attention à bien positionner celui étudié pour la suite avec la fonction `Idents()`. 
 
 ```{r}
 colnames(pbmc@meta.data)
 ```
+-->
 
+### Cell clustering for after
 
-- Pour la suite, on va se focaliser sur le clustering obtenu avec la resolution 0.5.
+- We focus on the clustering for resolution $0.5$ 
+
 
 ```{r}
 Idents(pbmc)<-pbmc@meta.data$Clusters_0.5
-table(Idents(pbmc))
-#EffPlot(pbmc,resolution=0.5,clustname="Clusters_0.5")
 pbmc$seurat_clusters<-pbmc@meta.data$Clusters_0.5
-DimPlot(pbmc,reduction = "umap")
 ```
 
+:::: {.columns}
+::: {.column width="50%"}
+```{r}
+EffPlot(pbmc,resolution=0.5,clustname="seurat_clusters")
+```
+:::
+::: {.column width="50%"}
+```{r}
+DimPlot(pbmc,reduction = "umap")
+```
+:::
+::::
 
-## Marker gene
+## Cluster markers 
 
-### Formalisation du problème
+### Principle 
 
-- Objectif: déterminer les gènes dont l'expression varient entre 2 "groupes" cellulaires ($\mathcal G_1$ et $\mathcal G_2$)
+- Goal: find genes differentially expressed between 2 cell groups ($\mathcal G_1$ and $\mathcal G_2$)
 
-- Gènes marqueurs pour une classe  $\mathcal C_k$: 
-$\mathcal G_1 = \mathcal C_k$ et 
+- Markers for a single cluster $\mathcal C_k$, compared to all other cells: 
+$\mathcal G_1 = \mathcal C_k$ and
 $\mathcal G_2 = \{1,\ldots,n\} \backslash \mathcal C_k$
 
-- Côté statistique, c'est un problème de test !
+- For each gene, we want to test a differentially expression 
 
-- Fonctions dans `Seurat`: `FindMarkers()` et `FindAllMarkers()`
-
-
-### Différentes situations
-
-![](images/schemaDE.png)
+::: {.callout-warning title="Seurat" icon=false}
+- Functions `FindMarkers()` and `FindAllMarkers()`
+:::
 
 
-### Test de Wilcoxon
+### Several situations 
 
-- Pour un gène $g$ fixé :
- on veut tester s'il y a une différente de distribution de l'expression de ce gène entre deux échantillons 
-$\underline{X}^{(1)}=(X_{gc}; c\in\mathcal G_1)$ et 
+![](images/schemaDE.png){width="80%" fig-align="center"}
+
+
+### Wilcoxon test 
+
+:::: {.columns}
+::: {.column width="50%"}
+
+- For each gene, test whether the two expression samples $\underline{X}^{(1)}=(X_{gc}; c\in\mathcal G_1)$ and
 $\underline{X}^{(2)}=(X_{gc}; c\in\mathcal G_2)$
+have the same probability distribution
 
-```{r,echo=F}
+- Wilcoxon test: non parametric test based on ranks
+
+- Multiple testing correction (Bonferroni in Seurat)
+:::
+::: {.column width="50%"}
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
 pbmcaux<-pbmc
 pbmcaux$aux<-pbmc$Clusters_0.5
 pbmcaux$aux[pbmc$Clusters_0.5==3]<-"3"
@@ -1101,39 +1162,53 @@ Idents(pbmcaux)<-pbmcaux$aux
 RidgePlot(pbmcaux,features=c("CD79A","GNG5"))
 ```
 
-- Test de Wilcoxon : test non paramétrique basé sur les rangs
+:::
+::::
 
--  + Correction de tests multiples (dans Seurat, Bonferroni)
-
+### Example for Cluster 3
 
 ```{r}
+#| warning: false
+#| message: false
 GeneMkWilcox3<-FindMarkers(pbmc,
                            test.use = "wilcox",
                            ident.1 = 3,
                            logfc.threshold=0.5)
 head(GeneMkWilcox3)
+```
+
+- Number of gene markers: 
+
+```{r}
 sum(GeneMkWilcox3$p_val_adj<0.01)
 ```
 
 
-### Problème de double-dipping
+### Double-dipping problem
 
-- Beaucoup de gènes marqueurs détectés $\Longrightarrow$ problème de double-dipping
+- Too many marker genes detected $\Longrightarrow$ double-dipping problem
 
 ![](images/doubledipping.png)
 
-- Reste un problème ouvert en statistique, loin d'une solution pour le scRNAseq
+- Still an open problem in statistics, no solutions yet for scRNAseq data analysis
 
-### Méthode AUC (area under the ROC curve) 
+### AUC method
 
+::::{.columns}
+:::{.column width="40%"}
 - AUC = area under the ROC curve ($2\times |\mbox{AUC}-0.5|$ )
-- Attention, ce n'est pas un test ! 
+- Warning: it is not a testing procedure! 
+- Difficult to choose a threshold!
+:::
+:::{.column width="60%"}
+![](images/AUROC1.png){width="80%" fig-align="center"}
 
-![](images/AUROC1.png)
-![](images/AUC.png)
+![](images/AUC.png){width="80%" fig-align="center"}
+:::
+::::
 
-- Mais difficulté sur le choix du seuil !
 
+### Example
 
 ```{r}
 GeneMkAUC3<-FindMarkers(pbmc,
@@ -1145,49 +1220,57 @@ ggplot(GeneMkAUC3,aes(x=myAUC))+
   geom_density()
 ```
 
-### Autres indicateurs disponibles
 
-- pct.1 / pct.2 : $\%$ de cellules où le gène $g$ est exprimé ($X_{cg}>0$) dans le groupe $\mathcal G_1$ / $\mathcal G_2$
 
-- avg$\_$log2FC : log2 Fold-Change de l'expression moyenne entre les deux groupes  
+### Other available indicators
 
-- Pour tous ces indicateurs, il faut ensuite faire des choix de seuil
+- pct.1 / pct.2 : $\%$ of cells in which gene $g$ is expressed ($X_{cg}>0$) in group $\mathcal G_1$ / $\mathcal G_2$
+
+- avg$\_$log2FC : log fold-change of the average expression between the two groups
+
+- All these indicators require the choice of a threshold 
 
 ```{r}
 head(GeneMkAUC3)
 ```
 
 
-### Exemple
-
-- Sélection des gènes marqueurs pour le cluster 3 en appliquant des filtres
+### Example
+::::{.columns}
+:::{.column width="40%"}
+- Selection of markers for Cluster 3 
 
 ```{r}
+#| echo: false
 GeneMkAUC3$gene<-rownames(GeneMkAUC3)
 GeneMkWilcox3$gene<-rownames(GeneMkWilcox3)
-GeneMkCl3_merge<-merge(GeneMkAUC3,GeneMkWilcox3[,c(1,5,6)],by="gene")
-head(GeneMkCl3_merge)
 ```
 
-
 ```{r}
+#| echo: true
+GeneMkCl3_merge<-merge(GeneMkAUC3,GeneMkWilcox3[,c(1,5,6)],by="gene")
+head(GeneMkCl3_merge)
+
 SelectGene<-GeneMkCl3_merge%>%
     filter(myAUC>0.9)%>%
     filter(avg_log2FC>2)%>%
     arrange(desc(myAUC))
-head(SelectGene)
 ```
 
-- Pour visualiser, on peut s'appuyer sur les fonctions `VlnPlot()`, 
+```{r}
+head(SelectGene)
+```
+:::
+:::{.column width="50%"}
+- Visualization with `VlnPlot()`, 
 `FeaturePlot()`, `DotPlot()`, `RidgePlot()`
 
 ```{r}
-VlnPlot(pbmc, features = SelectGene$gene[1:3], layer = "counts", log = TRUE)
-VlnPlot(pbmc, features = SelectGene$gene[1:3], layer = "data", log = TRUE)
+VlnPlot(pbmc, features = SelectGene$gene[1:2], layer = "data", log = TRUE)
 ```
 
 ```{r}
-FeaturePlot(pbmc, features = SelectGene$gene[1:3])
+FeaturePlot(pbmc, features = SelectGene$gene[1:2])
 ```
 
 ```{r}
@@ -1195,44 +1278,80 @@ DotPlot(pbmc,features = SelectGene$gene[1:3])
 ```
 
 ```{r}
-RidgePlot(pbmc,features = SelectGene$gene[1:3])
+#| message: false
+#| warning: false
+RidgePlot(pbmc,features = SelectGene$gene[1:2])
 ```
+:::
+::::
 
+### Gene markers for all clusters
 
-### Gènes marqueurs pour toutes les classes
+- Function `FindAllMarkers()` to detect gene markers for each cluster (based on `FindMarkers()`).
 
-- Utilisation de la fonction `FindAllMarkers()` pour faire la détection des gènes marqueurs sur toutes les classes (s'appuie sur `FindMarkers()`).
-
+<!--
 > Attention, ne lancez pas les fonctions suivantes en raison du temps calcul
 > Chargez la sauvegarde des fichiers obtenus
+-->
 
-```{r,eval=F}
+::::{.columns}
+:::{.column width="45%"}
+
+```{r}
+#| eval: false
 GeneMkWilcox<-FindAllMarkers(pbmc,
-                             logfc.threshold = 0.1,
-                             test.use = "wilcox")
+            logfc.threshold = 0.1,
+            test.use = "wilcox")
+```
+
+```{r}
+#| eval: false
+#| echo: false
 saveRDS(GeneMkWilcox, file = "data/GeneMkWilcox.rds")
+```
+
+```{r}
+#| echo: false
+GeneMkWilcox<-readRDS("data/GeneMkWilcox.rds")
+GeneMkWilcox$gene<-rownames(GeneMkWilcox)
+```
+
+```{r}
+head(GeneMkWilcox)
+table(GeneMkWilcox$cluster)
+```
+:::
+:::{.column width="45%"}
+
+```{r}
+#| eval: false
 GeneMkAUC<-FindAllMarkers(pbmc,
-                          logfc.threshold = 0.1,
-                          test.use = "roc")
+          logfc.threshold = 0.1,
+          test.use = "roc")
+```
+
+```{r}
+#| eval: false
+#| echo: false
 saveRDS(GeneMkAUC, file = "data/GeneMkAUC.rds")
 ```
 
 ```{r}
-GeneMkWilcox<-readRDS("data/GeneMkWilcox.rds")
-GeneMkWilcox$gene<-rownames(GeneMkWilcox)
-head(GeneMkWilcox)
-table(GeneMkWilcox$cluster)
+#| echo: false
+GeneMkAUC<-readRDS("data/GeneMkAUC.rds")
+GeneMkAUC$gene<-rownames(GeneMkAUC)
 ```
 
 ```{r}
-GeneMkAUC<-readRDS("data/GeneMkAUC.rds")
-GeneMkAUC$gene<-rownames(GeneMkAUC)
 head(GeneMkAUC)
 table(GeneMkAUC$cluster)
 ```
-
+:::
+::::
 
 ```{r}
+#| eval: false
+#| echo: false
 ## PB de merge car gene et cluster ! A revoir
 ## il faut merger les genes pour chaque cluster fixé
     ##GeneMk_merge<-merge(GeneMkAUC,GeneMkWilcox[,c(1,5,6,7)],by="gene")
@@ -1249,11 +1368,12 @@ GeneMk_merge[65:75,]  ## pourquoi ce n'est pas dans GeneMkAUC ???
 ggplot(GeneMkAUC,aes(x=cluster,y=myAUC))+
   geom_violin(aes(color=cluster))+
   stat_summary(fun.y=function(z) { quantile(z,0.9) }, geom="point", shape=20, size=2)
-  #geom_boxplot(width=0.1)
 ```
 
 
 ```{r}
+#| message: false
+#| warning: false
 GeneMkAUC %>%
     group_by(cluster) %>%
     arrange(desc(myAUC))%>%
@@ -1264,12 +1384,12 @@ DoHeatmap(pbmc, features = top10$gene) + NoLegend()
 ```
 
 
-### ????
+### Other cases
 
-- Dans le cas où les deux groupes sont deux clusters
-$$\mathcal G_1 = \mathcal C_k \textrm{ et } \mathcal G_2 = \mathcal C_{k'}$$
-- Utilisation de la fonction `FindMarkers()` en précisant `ident.1` et `ident.2`
+- In the case where $\mathcal G_1 \bigcup \mathcal G_2 \neq \{1,\ldots,C\}$: 
+Use `FindMarkers()` by specifying  `ident.1` et `ident.2`
 
+- For instance, between two clusters $\mathcal G_1 = \mathcal C_k$  and $\mathcal G_2 = \mathcal C_{k'}$
 
 ```{r}
 GeneMkCl3vsCl5<-FindMarkers(pbmc,
@@ -1277,6 +1397,10 @@ GeneMkCl3vsCl5<-FindMarkers(pbmc,
                   ident.1=3,
                   ident.2=5,
                   logfc.threshold=0.1)
+```
+
+```{r}
+#| echo: false
 ggplot(GeneMkCl3vsCl5,aes(x=myAUC))+
   geom_density()
 ```
@@ -1289,6 +1413,7 @@ head(SelectCl3vsCl5)
 ```
 
 ```{r}
+#| echo: false
 DoHeatmap(pbmc[,which(pbmc$Clusters_0.5 %in% c(3,5))], 
           features = rownames(SelectCl3vsCl5),
           assay = "RNA",slot = "data") + 
@@ -1296,45 +1421,56 @@ DoHeatmap(pbmc[,which(pbmc$Clusters_0.5 %in% c(3,5))],
 ```
 
 ```{r}
+#| echo: false
+#| eval: false
 FeaturePlot(pbmc, features = rownames(SelectCl3vsCl5)[1:3])
-```
-
-```{r}
 DotPlot(pbmc,features = rownames(SelectCl3vsCl5)[1:10])+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-```
-
-```{r}
 RidgePlot(pbmc,features = rownames(SelectCl3vsCl5)[1])
 ```
 
-# Pipeline d'analyse pour deux (plusieurs) conditions biologiques
+# Analysis pipeline for two (or more) biological conditions
 
-### Plusieurs types d'intégration
+### Several types of integration
 
-![](images/IntegHorizontal.png)
-![](images/IntegVertical.png)
+::::{.columns}
+:::{.column width="50%"}
+![**Horizontal** integration](images/IntegHorizontal.png){width="90%"}
+:::
+:::{.column width="50%"}
+![**Vertical** integration](images/IntegVertical.png){width="90%"}
+:::
+::::
+
+- In the following, we focus on horizontal integration
+
+![](images/integ2.png){width="40%"}
 
 
-### Integration horizontale
-
-![](images/integ2.png)
-
-### REM
-
-A réfléchir : 
-
-- Si on a deux fichiers de données diff --> 2 objets Seurat normalisés séparément puis intégration
-- Dans l'exemple ifnb c'est sous forme de layers (Seurat V5)
 
 <!--
+A réfléchir : 
+- Si on a deux fichiers de données diff : 2 objets Seurat normalisés séparément puis intégration
+- Dans l'exemple ifnb c'est sous forme de layers (Seurat V5)
+
 https://nbisweden.github.io/workshop-scRNAseq/labs/seurat/seurat_03_integration.html
 -->
 
 ### Example
 
-The object contains data from human PBMC from two conditions, interferon-stimulated and control cells (stored in the stim column in the object metadata). We will aim to integrate the two conditions together, so that we can jointly identify cell subpopulations across datasets, and then explore how each group differs across conditions
+- Data `ifnb` available in seurat-data
 
+```{r}
+#| 
+InstallData("ifnb")
+ifnb <- LoadData("ifnb")
+```
+
+- The object contains data from human PBMC from two conditions, interferon-stimulated and control cells (stored in the stim column in the object metadata). 
+
+- Aim: integrate the two conditions, so that we can jointly identify cell subpopulations across datasets, and then explore how each group differs across conditions
+
+- Remark: 
 In previous versions of Seurat, we would require the data to be represented as two different Seurat objects. In Seurat v5, we keep all the data in one object, but simply split it into multiple ‘layers’. To learn more about layers, check out our Seurat object interaction vignette.
 
 #### With default command from seurat data
@@ -1915,6 +2051,7 @@ pseudo_ifnb2 <- AggregateExpression(ifnb[,ICD14Mono],
                                    assays = "RNA", 
                                    return.seurat = T, 
                                    group.by = c("stim", "donor_id", "seurat_annotations"))
+colnames(pseudo_ifnb2@meta.data)<-c("orig.ident","stim","donor_id")
 
 cts2<-as.matrix(pseudo_ifnb2@assays$RNA$counts)
 coldata2<-pseudo_ifnb2@meta.data

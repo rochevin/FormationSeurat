@@ -1463,6 +1463,7 @@ https://nbisweden.github.io/workshop-scRNAseq/labs/seurat/seurat_03_integration.
 ```{r}
 #| warning: false
 #| message: false
+library(SeuratData)
 InstallData("ifnb")
 ifnb <- LoadData("ifnb")
 ```
@@ -1630,6 +1631,8 @@ FALSE  TRUE
 (data.CTRL and data.STIM)
 
 ```{r}
+#| message: false
+#| warning: false
 ifnb <- NormalizeData(ifnb)
 ```
 
@@ -1651,6 +1654,8 @@ ifnb@assays$RNA$data.STIM[1:10,1:10]
 - High variable genes are computed for each condition 
 
 ```{r}
+#| message: false
+#| warning: false
 ifnb <- FindVariableFeatures(ifnb)
 ```
 
@@ -1668,7 +1673,7 @@ head(VariableFeatures(ifnb,assay="RNA",layer="counts.STIM"))
 ::::
 
 ```{r}
-#|echo: false
+#| echo: false
 top10<-head(VariableFeatures(ifnb), 10)
 plot1<-VariableFeaturePlot(ifnb)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)

@@ -13,12 +13,11 @@ execute:
   cache: true
 ---
 
-```{r}
+```{r loadlib}
 #| message: false
 #| warning: false
 
 library(Seurat)
-library(SeuratData)
 library(ggplot2)
 library(reshape2)
 library(tidyverse)
@@ -32,8 +31,6 @@ library(enrichplot)
 library(org.Hs.eg.db)
 source("Cours/FunctionsAux.R")
 
-#devtools::install_github('immunogenomics/presto')
-#devtools::install_github('satijalab/seurat-data')
 ```
 
 # Présentation et création de l'objet Seurat
@@ -46,12 +43,11 @@ source("Cours/FunctionsAux.R")
 
 ## Objet Seurat depuis seurat data
 
-```{r}
+```{r load_ifnb}
 #| message: false
 #| warning: false
-
-InstallData("ifnb")
-ifnb <- LoadData("ifnb")
+SeuratData::InstallData("ifnb")
+ifnb <- SeuratData::LoadData("ifnb")
 ```
 
 ```{r}

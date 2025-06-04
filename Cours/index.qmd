@@ -16,6 +16,7 @@ code-annotations: below
 logo: images/Biostat_logo-rvb.png
 width: 1600
 height: 800
+bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -461,7 +462,7 @@ $$
   + "CLR" : Applies a centered log ratio transformation
   
 $$
-\log\left(\frac{x_{gc}}{\exp\left(\frac{1}{G}\underset{g}{\sum}x_{gc}\mathds{1}_{x_{gc}>0}\right)}  +1\right)
+\log\left(\frac{x_{gc}}{\exp\left(\frac{1}{G}\underset{g}{\sum}x_{gc}\mathbb{1}_{x_{gc}>0}\right)}  +1\right)
 $$
 
 ## Normalization in Seurat
@@ -784,26 +785,24 @@ DimHeatmap(pbmc, dims = 1:2, cells = 500, balanced = TRUE)
 
 ## t-SNE 
 
-- t-SNE = t-Distributed stochastic neighbor embedding 
-(Maaten and Hinton, 2008; Van Der Maaten, 2014)
-
+- t-SNE = t-Distributed stochastic neighbor embedding [@maaten2008visualizing;@van2014accelerating]
 - Dimensionality reduction algorithm for non-linear data representation that produces a low-dimensional distribution of high-dimensional data
 
-![](images/schemetSNE.png){width="90%" fig-align="center"}
+![](images/schemetSNE.png){width="60%" fig-align="center"}
 
-
-
-
-## t-SNE with Seurat
-
-::: {.callout-warning title="Seurat"}
+::: {.callout-warning title="Seurat" icon="false"}
 
 - function `RunTSNE()` 
 
 - initial data = PCA coordinates  (reduction="pca" default) +  KNN neighbours (`FindNeighbors()`)
 :::
 
-### t-SNE example
+
+## t-SNE with Seurat
+
+
+
+### Example
 
 ```r
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
@@ -827,29 +826,29 @@ DimPlot(pbmc, reduction = "tsne")+NoLegend()
 
 ## UMAP
 
-::: {.callout-note title="UMAP"}
-**Uniform manifold approximation and projection** (UMAP) is a dimension reduction technique that can be used not only for visualization similarly to t-SNE but also for general non-linear dimension reduction. Compared with t-SNE, UMAP retains more global structure with superior run-time performance (McInnes et al., 2018; Becht et al., 2019).
+- UMAP = **Uniform manifold approximation and projection** 
+  - It is a general non-linear dimension reduction method
+  - Compared with t-SNE, UMAP retains more global structure with superior run-time performance 
+  - [@mcinnes2018umap;@becht2019dimensionality]
+
+
+
+
+![](images/UMAPalgo.png)
+
+- For more details : 
+  + A youtube video describing the process can be found [here](https://www.youtube.com/watch?v=jth4kEvJ3P8).
+  + A comparison between PCA, t-SNE and UMAP can be found [here](https://biostatsquid.com/pca-umap-tsne-comparison/)
+
+
+## Example
+
+::: {.callout-warning title="Seurat" icon=false}
+
+- function `RunUMAP()` 
+
+- initial data = PCA coordinates  (reduction="pca" default) +  KNN neighbours (`FindNeighbors()`)
 :::
-
-:::{.fragment}
-
-::: {.callout-note title="Algorithm"}
-1) the data are uniformly distributed on the Riemannian manifold;
-2) the Riemannian metric is locally constant (or can be approximated);
-3) the manifold is locally connected.
-
-The embedding is found by searching the low-dimensional projection of the data with the closest equivalent fuzzy topology. In terms of model construction, UMAP includes two steps:
-
-1) building a particular weighted k-neighbor graph using the nearest-neighbor descent algorithm (Dong et al., 2011)
-2) computing a low-dimensional representation which can preserve desired characteristics of this graph.
-:::
-
-A youtube video describing the process can be found [here](https://www.youtube.com/watch?v=jth4kEvJ3P8).
-
-
-:::
-
-## UMAP dans Seurat
 
 
 ```r

@@ -9,14 +9,13 @@ if(!require("presto")){pak::pkg_install("immunogenomics/presto",dependencies = T
 if(!require("Seurat")){pak::pkg_install("satijalab/seurat",dependencies = T)}
 if(!require("SeuratData")){pak::pkg_install("satijalab/seurat-data")}
 if(!require("harmony")){pak::pkg_install("immunogenomics/harmony",dependencies = T)}
-if(!require("ggplot2")){pak::pkg_install("ggplot2",dependencies = T)}
+if(!require("tidyverse")){pak::pkg_install("tidyverse",dependencies = T)}
 if(!require("RColorBrewer")){pak::pkg_install("RColorBrewer",dependencies = T)}
 if(!require("reshape2")){pak::pkg_install("reshape2",dependencies = T)}
 if(!require("FactoMineR")){pak::pkg_install("FactoMineR",dependencies = T)}
 if(!require("corrplot")){pak::pkg_install("corrplot",dependencies = T)}
 if(!require("mclust")){pak::pkg_install("mclust",dependencies = T)}
 if(!require("clustree")){pak::pkg_install("clustree",dependencies = T)}
-if(!require("tidyverse")){pak::pkg_install("tidyverse",dependencies = T)}
 if(!require("reshape2")){pak::pkg_install("reshape2",dependencies = T)}
 if(!require("tidyverse")){pak::pkg_install("tidyverse",dependencies = T)}
 if(!require("DESeq2")){pak::pkg_install("DESeq2",dependencies = T)}

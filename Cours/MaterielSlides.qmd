@@ -1626,7 +1626,7 @@ FALSE  TRUE
 
 ### Normalization
 
-- Performs normalization as described above for each counts matrix 
+- Perform normalization as described above for each counts matrix 
 (data.CTRL and data.STIM)
 
 ```{r}
@@ -1675,9 +1675,7 @@ plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 plot2
 ```
 
-### Dimension reduction sans integration
-
-- En fait ça fait la réduction de dimension de toutes les données ensembles sans intégration ??
+### Dimension reduction without integration
 
 ```{r}
 ifnb <- ScaleData(ifnb)
@@ -1689,6 +1687,7 @@ DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
 
 ### Overview
 
+https://www.sciencedirect.com/science/article/pii/S101684782300016X
 
 
 ### Integration dans Seurat

@@ -1706,40 +1706,59 @@ DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
 
 ### Overview
 
+A FAIRE
 https://www.sciencedirect.com/science/article/pii/S101684782300016X
 
 
-### Integration dans Seurat
+### Integration in Seurat
 
-
-
-
+<!--
 >We now aim to integrate data from the two conditions, so that cells from the same cell type/subpopulation will cluster together.
 
 >We often refer to this procedure as intergration/alignment. When aligning two genome sequences together, identification of shared/homologous regions can help to interpret differences between the sequences as well. Similarly for scRNA-seq integration, our goal is not to remove biological differences across conditions, but to learn shared cell types/states in an initial step - specifically because that will enable us to compare control stimulated and control profiles for these individual cell types.
 
 >The Seurat v5 integration procedure aims to return a single dimensional reduction that captures the shared sources of variance across multiple layers, so that cells in a similar biological state will cluster. The method returns a dimensional reduction (i.e. integrated.cca) which can be used for visualization and unsupervised clustering analysis. For evaluating performance, we can use cell type labels that are pre-loaded in the seurat_annotations metadata column.
+-->
 
-- Seurat function: IntegrateLayers() 
-- Five integration methods :
+::: {.callout-warning title="Seurat" icon=false}
+- Function `IntegrateLayers()` 
+- Four integration methods :
 
-  + Anchor-based CCA integration (method=CCAIntegration)
+  + Anchor-based CCA integration (method=CCAIntegration)<br>
   CCA = Canonical Correlation Analysis
-
 
   + Anchor-based RPCA integration (method=RPCAIntegration)
   + Harmony (method=HarmonyIntegration)
   + FastMNN (method= FastMNNIntegration)
-  + scVI (method=scVIIntegration) --> Ne semble plus être dispo
-  
+:::
 
-https://www.biorxiv.org/content/10.1101/2024.12.16.628691v1.full.pdf 
+- See also the R package [SeuratIntegrate](https://github.com/cbib/Seurat-Integrate/)  (Specque et al, 2024)
+
+<!--
+@article{seuratintegrate,
+  title={SeuratIntegrate: an R package to facilitate the use of integration methods with Seurat},
+  author={Specque, Florian and Barr{\'e}, Aur{\'e}lien and Nikolski, Macha and Chalopin, Domitille},
+  journal={bioRxiv},
+  pages={2024--12},
+  year={2024},
+  publisher={Cold Spring Harbor Laboratory}
+}
+-->
+
 
   
-### CCA
+### CCA integration
 
 CCA = Canonical Correlation Analysis
 
+Goal: find linear combinations of the genes in both datasets that produce correlated cell embeddings in a lower-dimensional space
+
+For more details, see for instance [this page]( https://divingintogeneticsandgenomics.com/post/cca-alignment/) or [this blog](https://xinmingtu.cn/blog/2022/CCA_dual_PCA/)
+
+![](images/CCA-Seurat.png)
+
+
+<!--
 >The goal of CCA here is to find linear combinations of the genes in both datasets that produce correlated cell embeddings in a lower-dimensional space. Essentially, we aim to align the two datasets by identifying the correlated patterns in gene expression that are shared between the two sets of cells.
 
 > CCA c'est Dual PCA pour deux datasets. SVD $X Y^\top = U\Sigma V$ $Z_X = U \Sigma^{1/2}$ et $Z_Y = V \Sigma^{1/2}$
@@ -1748,13 +1767,14 @@ CCA = Canonical Correlation Analysis
 > Détail ici : https://divingintogeneticsandgenomics.com/post/cca-alignment/
 
 ![](images/CCA-DualPCA.png)
-
-![](images/CCA-Seurat.png)
-
 Explication: https://xinmingtu.cn/blog/2022/CCA_dual_PCA/
+-->
 
+### Example
 
 ```{r}
+#| message: false
+#| warning: false
 ifnb_cca <- IntegrateLayers(object = ifnb, 
                         method = CCAIntegration, 
                         orig.reduction = "pca", 
@@ -1772,19 +1792,49 @@ ifnb_cca <- RunUMAP(ifnb_cca,
 ```
 
 ```{r}
+#| echo: false
 p1<-DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
 p2<-DimPlot(ifnb_cca, reduction = "umap", group.by = c("stim"))
 p1+p2
 ```
 
 
-### Harmony
+### Harmony integration
 
+- R Package [Harmony](https://github.com/immunogenomics/harmony), Python package [harmonypy](https://github.com/slowkow/harmonypy?tab=readme-ov-file),  Korsunsky et al., Nature methods, 2019
+
+<!--
+@article{korsunsky2019fast,
+  title={Fast, sensitive and accurate integration of single-cell data with Harmony},
+  author={Korsunsky, Ilya and Millard, Nghia and Fan, Jean and Slowikowski, Kamil and Zhang, Fan and Wei, Kevin and Baglaenko, Yuriy and Brenner, Michael and Loh, Po-ru and Raychaudhuri, Soumya},
+  journal={Nature methods},
+  volume={16},
+  number={12},
+  pages={1289--1296},
+  year={2019},
+  publisher={Nature Publishing Group US New York}
+}
+-->
+
+::: {.callout-note title="Algorithm" icon=false}
+Input:  PCA embedding of cells + batch assignments of cells
+
+Iterate 2 steps
+
+  1. maximum diversity clustering
+  2. mixture model based linear batch correction
+
+Return: batch corrected embedding
+:::
+
+
+<!--
 > The Harmony algorithm inputs a PCA embedding (Z) of cells, along with their batch assignments (ϕ), and returns a batch corrected embedding (). This algorithm, summarized as Algorithm 1 below, iterates between two complementary stages: maximum diversity clustering (Algorithm 2) and a mixture model based linear batch correction (Algorithm 3). The clustering step uses the batch corrected embedding to compute a soft assignment of cells to clusters, encoded in the matrix R. The correction step uses these soft clusters to compute a new corrected embedding from the original one. Efficient implementations of Harmony, including the clustering and correction subroutines, are available as part of an R package at https://github.com/immunogenomics/harmony.
 
 ![](images/HarmonyAlgo1.png)
 ![](images/HarmonyAlgo2.png)
 ![](images/HarmonyAlgo3.png)
+-->
 
 
 
@@ -1792,7 +1842,14 @@ p1+p2
 ![](images/HarmonyIntegration.png)  
 
 
+- To see the iterations of Harmony, see [here](https://slowkow.com/notes/harmony-animation/)
+
+
+### Example
+
 ```{r}
+#| warning: false
+#| message: false
 ifnb_h <- IntegrateLayers(object = ifnb, 
                         method = HarmonyIntegration, 
                         orig.reduction = "pca", 
@@ -1810,6 +1867,7 @@ ifnb_h <- RunUMAP(ifnb_h,
 ```
 
 ```{r}
+#| echo: false
 p3<-DimPlot(ifnb_h, reduction = "umap", group.by = c("stim"))
 p1+p2+p3
 ```

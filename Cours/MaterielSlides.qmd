@@ -1869,20 +1869,26 @@ ifnb_h <- RunUMAP(ifnb_h,
 ```{r}
 #| echo: false
 p3<-DimPlot(ifnb_h, reduction = "umap", group.by = c("stim"))
-p1+p2+p3
+p1+p3
 ```
 
-  
-### Clustering 
+## Clustering
 
-Pour la suite, on poursuit avec l'intégration par CCA
+### Example
+
+- In the following, we use the CCA integration 
+
+- Clustering with Louvain algorithm (see above)
 
 ```{r}
 ifnb<-ifnb_cca
-
 ifnb <- FindClusters(ifnb, resolution = 0.5)
+```
 
-# Visualization
+- Vizualisation
+
+```{r}
+#| echo: false
 DimPlot(ifnb, 
         reduction = "umap", 
         group.by = c("stim", "seurat_clusters"))
@@ -1890,8 +1896,10 @@ DimPlot(ifnb,
 DimPlot(ifnb, reduction = "umap", split.by = "stim")
 ```
 
+- Cluster composition
 
 ```{r}
+#| echo: false
 Aux<-melt(table(Idents(ifnb),ifnb$stim))
 colnames(Aux)<-c("Cluster","Condition","len")
 ggplot(data=Aux, aes(x=Cluster, y=len, fill=Condition)) +
@@ -1903,25 +1911,73 @@ ggplot(data=Aux, aes(x=Cluster, y=len, fill=Condition)) +
 
 ### Annotations
 
-- annotation Seurat des données est disponible
+- For this example, a cell annotation is available 
 
 ```{r}
 Idents(ifnb)<- "seurat_annotations"
 table(Idents(ifnb))
+```
 
+```{r}
+#| echo: false
 DimPlot(ifnb, 
         reduction = "umap", 
         group.by = c("seurat_annotations"))
 ```
 
 
+## Differential analysis
+
+### Warnings
+
+- The term "differential analysis" is vague/large
+
+- It is important to well formulate the question and know the data design 
+
+![Samarendra et al, Entropy 22](images/Dasetal-Entropy22-ReviewDEA.png)
+
+<!--
+@article{das2022differential,
+  title={Differential expression analysis of single-cell RNA-Seq data: current statistical approaches and outstanding challenges},
+  author={Das, Samarendra and Rai, Anil and Rai, Shesh N},
+  journal={Entropy},
+  volume={24},
+  number={7},
+  pages={995},
+  year={2022},
+  publisher={MDPI}
+}
+--> 
+
+![Nguyen et al. Nature Comm. 23](images/Nguyenetal-NatureComm2023.png)
+
+<!--
+@article{nguyen2023benchmarking,
+  title={Benchmarking integration of single-cell differential expression},
+  author={Nguyen, Hai CT and Baik, Bukyung and Yoon, Sora and Park, Taesung and Nam, Dougu},
+  journal={Nature Communications},
+  volume={14},
+  number={1},
+  pages={1570},
+  year={2023},
+  publisher={Nature Publishing Group UK London}
+}
+-->
 
 
-### Identify conserved cell type markers
 
-> To identify canonical cell type marker genes that are conserved across conditions, we provide the FindConservedMarkers() function. This function performs differential gene expression testing for each dataset/group and combines the p-values using meta-analysis methods from the MetaDE R package. For example, we can calculated the genes that are conserved markers irrespective of stimulation condition in cluster 6 (NK cells).
+
+### Q: Identify conserved cell type markers
+
+- Goal: identify canonical cell type marker genes that are conserved across conditions
+
+- In function `FindConservedMarkers()`: DE gene testing for each condition + combine pvalues, based on a function of MetaDE R package (by default, Tippett's method). For more details on the methods available in metap package, see [here](https://cran.r-project.org/web/packages/metap/vignettes/compare.pdf).
+
+### Example for the cluster of NK cells 
 
 ```{r}
+#| warning: false
+#| message: false
 Idents(ifnb) <- "seurat_annotations"
 NK.markers <- FindConservedMarkers(ifnb, 
                                    ident.1 = "NK", 
@@ -1930,17 +1986,21 @@ NK.markers <- FindConservedMarkers(ifnb,
 head(NK.markers)
 ```
 
+<!--
+> To identify canonical cell type marker genes that are conserved across conditions, we provide the FindConservedMarkers() function. This function performs differential gene expression testing for each dataset/group and combines the p-values using meta-analysis methods from the MetaDE R package. For example, we can calculated the genes that are conserved markers irrespective of stimulation condition in cluster 6 (NK cells).
 calcul FindMarkers pour la classe "NK" contre les autres seulement pour les cellules de STIM et celles de CTRL. 
 Puis, combine les pvaleurs selon une fonction du package metap. 
 (Fishers combined p-value or others from the metap package)).
-Par défaut dans la fonction FindConservedMarkers, meta.method = metap::minimump ---> Wilkinson's method 
+Par défaut dans la fonction FindConservedMarkers, meta.method = metap::minimump  Wilkinson's method 
 (wilkinsonp(p, r = 1, alpha, log.p))
 
 ref pour les méthodes de combinaison de pvaleurs
 https://cran.r-project.org/web/packages/metap/vignettes/compare.pdf
 
+-->
 
 ```{r}
+#| echo: false
 NK.markers<-NK.markers%>%
   arrange(minimump_p_val)
 
@@ -1949,32 +2009,19 @@ DotPlot(ifnb, features = rownames(NK.markers)[1:10],
     RotatedAxis()
 ```
 
-### Differential analysis
 
-#### Attention !
+### Q: DE genes between two conditions
 
-- Il faut bien avoir en tête son design
-- Il faut bien réfléchir à la question à laquelle on souhaite répondre
-- Bcp de méthodes proposées mais 
+- Goal: identify genes whose expression varies between the two conditions (cell types combined)
 
-
-#### DOC
-
-https://pmc.ncbi.nlm.nih.gov/articles/PMC9315519/ : table avec bcp de méthodes
-
-![](images/Nguyenetal-NatureComm2023.png)
-
-https://academic.oup.com/bfg/article/23/2/95/7107938
-
-![](images/Dasetal-Entropy22-ReviewDEA.png)
-
-
-
-### Example
-
-D'abord ajout d'informations pour avoir des "replicats"
+- Design in the example `ifnb` (see exercice): 
+  + two conditions: STIM vs CTRL
+  + add the sample IDs of each cell 
+  
+  
 
 ```{r}
+#| echo: false
 # load the inferred sample IDs of each cell
 ctrl <- read.table(url("https://raw.githubusercontent.com/yelabucsf/demuxlet_paper_code/master/fig3/ye1.ctrl.8.10.sm.best"), head = T, stringsAsFactors = F)
 stim <- read.table(url("https://raw.githubusercontent.com/yelabucsf/demuxlet_paper_code/master/fig3/ye2.stim.8.10.sm.best"), head = T, stringsAsFactors = F)
@@ -2004,31 +2051,36 @@ ifnb <- subset(ifnb, subset = donor_id != "unknown")
 table(ifnb$donor_id)
 ```
 
+
+<!--
 Pour la suite, création d'une colonne Condition_TypeCellulaire
 
 ```{r}
 ifnb$celltype.stim <- paste(ifnb$seurat_annotations, ifnb$stim, sep = "_")
 table(ifnb$celltype.stim)
 ```
+-->
 
 
 
-#### Question 1
 
-Question 1:  déterminer les gènes dont l'expression varie entre les deux conditions (types cellulaires confondus)
-
-
-##### Par méthode naive (Wilcoxon)
+### Wilcoxon test (Naive method)
 
 ```{r}
+#| message: false
+#| warning: false
 Idents(ifnb)<-ifnb$stim
 res1_Wilcox <- FindMarkers(object = ifnb, 
                            ident.1 = "STIM", 
                            ident.2 = "CTRL",
                            test.use = "wilcox")
+```
 
-mean(res1_Wilcox$p_val_adj<0.01)
+Percent of genes with $pvaladj<0.01$: `r round(100*mean(res1_Wilcox$p_val_adj<0.01),2)` $\%$
 
+```{r}
+#| message: false
+#| warning: false
 genetop_wilcox1<-res1_Wilcox %>%
    filter(p_val_adj<0.01)%>%
    arrange(desc(abs(avg_log2FC)))%>%
@@ -2036,15 +2088,32 @@ genetop_wilcox1<-res1_Wilcox %>%
 ```
 
 ```{r}
+#| echo: false
 DotPlot(ifnb,features=rownames(genetop_wilcox1)[1:10],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
 
-##### Par pseudo-bulk (DESeq2)
+### DESeq2 - pseudo-bulk method 
+
+<!--
+@article{love2014moderated,
+  title={Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2},
+  author={Love, Michael I and Huber, Wolfgang and Anders, Simon},
+  journal={Genome biology},
+  volume={15},
+  pages={1--21},
+  year={2014},
+  publisher={Springer}
+}
+-->
+
+
+- From single-cell data to pseudo-bulk data: function `AggregateExpression()`
 
 ```{r}
-# Question 1 : on regroupe par conditions et donor_id pour la création du pseudoBulk
+#| message: false
+#| warning: false
 pseudo_ifnb1 <- AggregateExpression(ifnb, 
                                    assays = "RNA", 
                                    return.seurat = T, 
@@ -2053,8 +2122,15 @@ pseudo_ifnb1 <- AggregateExpression(ifnb,
 head(pseudo_ifnb1)
 ```
 
+
+:::: {.columns}
+::: {.column width="45%"}
+- Using DESeq2 with Seurat object
+
 ```{r}
-# DESeq2 depuis Seurat
+#| warning: false
+#| message: false
+
 Idents(pseudo_ifnb1)<-"stim"
 bulk.cond1 <- FindMarkers(object = pseudo_ifnb1, 
                          ident.1 = "STIM", 
@@ -2062,23 +2138,35 @@ bulk.cond1 <- FindMarkers(object = pseudo_ifnb1,
                          test.use = "DESeq2")
 ```
 
+Percent of genes with $pvaladj<0.01$: 
+`r round(100*length(which(bulk.cond1$p_val_adj<0.01))/nrow(bulk.cond1),2)` $\%$
+
+:::
+::: {.column width="50%"}
+
+- Using DESeq2 on pseudo-bulk data
 
 ```{r}
-# En passant par le package DESeq2
+#| warning: false
+#| message: false
+
 library(DESeq2)
 cts1<-as.matrix(pseudo_ifnb1@assays$RNA$counts)
 coldata1<-pseudo_ifnb1@meta.data
 dds1 <- DESeqDataSetFromMatrix(countData = cts1,
-                              colData = coldata1,
-                              design= ~ donor_id + stim) 
+                      colData = coldata1,
+                      design= ~ donor_id + stim) 
 dds1 <- DESeq(dds1,fitType = c("local"))                      
-resultsNames(dds1) # lists the coefficients
-
 resDEseq1<-results(dds1,name="stim_STIM_vs_CTRL")
-length(which(resDEseq1$padj<0.01)) / nrow(resDEseq1)
 ```
 
+Percent of genes with $pvaladj<0.01$: 
+`r round(100*length(which(resDEseq1$padj<0.01))/nrow(resDEseq1),2)` $\%$
+
 ```{r}
+#| warning: false
+#| message: false
+
 genetopDEseq1<-as.data.frame(resDEseq1) %>%
    filter(padj<0.01)%>%
    arrange(desc(abs(log2FoldChange)))%>%
@@ -2086,6 +2174,10 @@ genetopDEseq1<-as.data.frame(resDEseq1) %>%
 ```
 
 ```{r}
+#| echo: false
+#| #| warning: false
+#| message: false
+
 DotPlot(ifnb,features=rownames(genetopDEseq1)[1:10],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
@@ -2098,29 +2190,59 @@ pheatmap(pseudo_ifnb1@assays$RNA$scale.data[rownames(genetopDEseq1),],
          show_colnames = TRUE)
 ```
 
+:::
+::::
 
-##### Par une méthode spécifique single-cell (ex: NEBULA)
+### NEBULA (specific single-cell method)
 
-Pour la question 1 :
+<!--
+@article{he2021nebula,
+  title={NEBULA is a fast negative binomial mixed model for differential or co-expression analysis of large-scale multi-subject single-cell data},
+  author={He, Liang and Davila-Velderrain, Jose and Sumida, Tomokazu S and Hafler, David A and Kellis, Manolis and Kulminski, Alexander M},
+  journal={Communications biology},
+  volume={4},
+  number={1},
+  pages={629},
+  year={2021},
+  publisher={Nature Publishing Group UK London}
+}
+-->
+
+- NEBULA = NEgative Binomial mixed model Using a Large-sample Approximation ([He et al., 2021](https://www.nature.com/articles/s42003-021-02146-6))
+
 
 ```{r}
+#| message: false
+#| warning: false
+
 library(nebula)
 ifnb_neb1<-scToNeb(obj=ifnb,assay="RNA",id="donor_id",pred=c("stim","seurat_annotations"))
 df1 = model.matrix(~stim+seurat_annotations, data=ifnb_neb1$pred)
-data_g = group_cell(count=ifnb_neb1$count,id=ifnb_neb1$id,pred=df1) # il faut grouper les cellules par indiv avant de faire nebula
+data_g = group_cell(count=ifnb_neb1$count,id=ifnb_neb1$id,pred=df1) 
 re1 = nebula(data_g$count,data_g$id,pred=data_g$pred)
+```
 
-mean(p.adjust(re1$summary$p_stimSTIM,method="BH")<0.01)
+Percent of genes with $pvaladj<0.01$: 
+`r round(100*mean(p.adjust(re1$summary$p_stimSTIM,method="BH")<0.01),2)` $\%$
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
 
 ifnbNebSumm1<-re1$summary
 ifnbNebSumm1$padjStim<-p.adjust(re1$summary$p_stimSTIM,method="BH")
 ifnbNebSumm1<-ifnbNebSumm1%>%
             filter(padjStim <0.01)%>%
             arrange(desc(abs(logFC_stimSTIM)))  
-head(ifnbNebSumm1)
+#colnames(ifnbNebSumm1)
 ```
 
 ```{r}
+#| echo: false
+#| message: false
+#| warning: false
 genetopNeb1<-ifnbNebSumm1%>%
    top_n(200)
 
@@ -2134,44 +2256,54 @@ pheatmap(pseudo_ifnb1@assays$RNA$scale.data[genetopNeb1$gene,],
          show_colnames = TRUE)
 ```
 
-##### Comparaison
+### Comparison
 
 ```{r}
 library(ggvenn)
-ggvenn(list(DEseq2=rownames(genetopDEseq1),Nebula=genetopNeb1$gene,Wilcox=rownames(genetop_wilcox1)))
+ggvenn(list(DEseq2=rownames(genetopDEseq1),
+            Nebula=genetopNeb1$gene,
+            Wilcox=rownames(genetop_wilcox1)))
 ```
 
 
-#### Question 2
+### Q: DE genes between two conditions for "CD14 Mono" cells 
 
-Question 2 : déterminer les gènes dont l'expression varie entre les deux conditions pour le type cellulaire "CD14 Mono" fixé.
+- We only consider the cellular type "CD14 Mono"
+
+- Goal: identify genes whose expression varies between the two conditions for the fixed cellular type "CD14 Mono"
+
+- We compare Wilkoxon, DESeq2 and NEBULA 
 
 
 ```{r}
-# Question 2
-ICD14Mono<-which(ifnb$seurat_annotations=="CD14 Mono")
+#| echo: false
+#| message: false
+#| warning: false
 
+ICD14Mono<-which(ifnb$seurat_annotations=="CD14 Mono")
+ifnb$celltype.stim <- paste(ifnb$seurat_annotations, ifnb$stim, sep = "_")
 Idents(ifnb)<-ifnb$celltype.stim
 res2_Wilcox <- FindMarkers(object = ifnb, 
                            ident.1 = "CD14 Mono_STIM", 
                            ident.2 = "CD14 Mono_CTRL",
                            test.use = "wilcox")
 
-mean(res2_Wilcox$p_val_adj<0.01)
+#mean(res2_Wilcox$p_val_adj<0.01)
 
 genetop_wilcox2<-res2_Wilcox %>%
    filter(p_val_adj<0.01)%>%
    arrange(desc(abs(avg_log2FC)))%>%
    top_n(100)
+
+#DotPlot(ifnb[,ICD14Mono],features=rownames(genetop_wilcox2)[1:10],group.by="stim")+
+#  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
 ```{r}
-DotPlot(ifnb[,ICD14Mono],features=rownames(genetop_wilcox2)[1:10],group.by="stim")+
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-```
+#| echo: false
+#| message: false
+#| warning: false
 
-```{r}
-# pseudobulk
 pseudo_ifnb2 <- AggregateExpression(ifnb[,ICD14Mono], 
                                    assays = "RNA", 
                                    return.seurat = T, 
@@ -2187,19 +2319,94 @@ dds2 <- DESeq(dds2,fitType = c("local"))
 resultsNames(dds2) # lists the coefficients
 
 resDEseq2<-results(dds2,name="stim_STIM_vs_CTRL")
-length(which(resDEseq2$padj<0.01)) / nrow(resDEseq2)
+#length(which(resDEseq2$padj<0.01)) / nrow(resDEseq2)
 ```
 
 
 ```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
 genetopDEseq2<-as.data.frame(resDEseq2) %>%
    filter(padj<0.01)%>%
    arrange(desc(abs(log2FoldChange)))%>%
    top_n(100)
 
-DotPlot(pseudo_ifnb2,features=rownames(genetopDEseq2)[1:10],group.by="stim")+
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+#DotPlot(pseudo_ifnb2,features=rownames(genetopDEseq2)[1:10],group.by="stim")+
+#  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+#pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopDEseq2),],
+#         cluster_cols = FALSE,       
+#         scale = "column",              
+#         show_rownames = FALSE,
+#         show_colnames = TRUE)
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+Idents(ifnb)<-ifnb$seurat_annotations
+ifnb_neb2<-scToNeb(obj=ifnb[,ICD14Mono],assay="RNA",id="donor_id",pred=c("stim"))
+df2 = model.matrix(~stim, data=ifnb_neb2$pred)
+data_g2 = group_cell(count=ifnb_neb2$count,id=ifnb_neb2$id,pred=df2) # il faut grouper les cellules par indiv avant de faire nebula
+re2 = nebula(data_g2$count,data_g2$id,pred=data_g2$pred)
+
+#mean(p.adjust(re2$summary$p_stimSTIM,method="BH")<0.01)
+
+ifnbNebSumm2<-re2$summary
+ifnbNebSumm2$padjStim<-p.adjust(re2$summary$p_stimSTIM,method="BH")
+ifnbNebSumm2<-ifnbNebSumm2%>%
+            filter(padjStim <0.01)%>%
+            arrange(desc(abs(logFC_stimSTIM)))  
+#head(ifnbNebSumm2)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+genetopNeb2<-ifnbNebSumm2%>%
+   top_n(100)
+
+#DotPlot(ifnb,features=genetopNeb2$gene[1:10],group.by="stim")+
+#  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+#library(pheatmap)
+#pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
+#         cluster_cols = FALSE,       
+#         scale = "row",              
+#         show_rownames = FALSE,
+#         show_colnames = TRUE)
+```
+
+:::: {.columns}
+::: {.column width="45%"}
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(ggvenn)
+ggvenn(list(DEseq2=rownames(genetopDEseq2),
+            Nebula=genetopNeb2$gene,
+            Wilcox=rownames(genetop_wilcox2)))
+
+```
+
+:::
+::: {.column width="45%"}
+Result with DESeq2: 
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
 pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopDEseq2),],
          cluster_cols = FALSE,       
          scale = "column",              
@@ -2207,63 +2414,41 @@ pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopDEseq2),],
          show_colnames = TRUE)
 ```
 
+:::
+::::
 
 
-```{r}
-# Nebula
-Idents(ifnb)<-ifnb$seurat_annotations
-ifnb_neb2<-scToNeb(obj=ifnb[,ICD14Mono],assay="RNA",id="donor_id",pred=c("stim"))
-df2 = model.matrix(~stim, data=ifnb_neb2$pred)
-data_g2 = group_cell(count=ifnb_neb2$count,id=ifnb_neb2$id,pred=df2) # il faut grouper les cellules par indiv avant de faire nebula
-re2 = nebula(data_g2$count,data_g2$id,pred=data_g2$pred)
 
-mean(p.adjust(re2$summary$p_stimSTIM,method="BH")<0.01)
+### Gene selection via Random Forest 
 
-ifnbNebSumm2<-re2$summary
-ifnbNebSumm2$padjStim<-p.adjust(re2$summary$p_stimSTIM,method="BH")
-ifnbNebSumm2<-ifnbNebSumm2%>%
-            filter(padjStim <0.01)%>%
-            arrange(desc(abs(logFC_stimSTIM)))  
-head(ifnbNebSumm2)
-```
+:::: {.columns}
+::: {.column width="70%"}
 
 ```{r}
-genetopNeb2<-ifnbNebSumm2%>%
-   top_n(100)
+#| message: false
+#| warning: false
 
-DotPlot(ifnb,features=genetopNeb2$gene[1:10],group.by="stim")+
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-
-
-library(pheatmap)
-pheatmap(pseudo_ifnb2@assays$RNA$scale.data[genetopNeb2$gene,],
-         cluster_cols = FALSE,       
-         scale = "row",              
-         show_rownames = FALSE,
-         show_colnames = TRUE)
-```
-
-
-
-
-##### Par une approche supervisée (ex: Random Forest)
-
-
-```{r}
 library(randomForest)
-library(caret)
-
-#SeuratObject@meta.data$TreatGenotype<-paste0(SeuratObject$Treatment,"-",SeuratObject$Genotype)
-#IBanq1<-which(SeuratObject@meta.data$Banque=="Bq1")
-
-
 datatrain<-t(as.matrix(ifnb@assays$RNA$scale.data[,ICD14Mono]))
 dataRF<-data.frame(datatrain,
                    Cl = as.factor(ifnb$stim[ICD14Mono]))
 resRF<-randomForest(Cl ~ ., data = dataRF,importance=T,proximity=T)
+```
+:::
+::: {.column width="30%"}
+![](images/RF.jpg)
+:::
+::::
+
+```{r}
 varImpPlot(resRF)
 table(resRF$predicted,dataRF$Cl)
+```
 
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
 
 genetopRF2<-as.data.frame(resRF$importance)%>%
       arrange(desc(MeanDecreaseAccuracy))%>%
@@ -2271,6 +2456,10 @@ genetopRF2<-as.data.frame(resRF$importance)%>%
 ```
 
 ```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
 DotPlot(ifnb,features=rownames(genetopRF2)[1:10],group.by="stim")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
@@ -2283,12 +2472,17 @@ DotPlot(ifnb,features=rownames(genetopRF2)[1:10],group.by="stim")+
 #         show_colnames = TRUE)
 ```
 
-##### Comparaison
+<!--
+### Comparison
 
 ```{r}
 library(ggvenn)
-ggvenn(list(DEseq2=rownames(genetopDEseq2),Nebula=genetopNeb2$gene,Wilcox=rownames(genetop_wilcox2),RF=rownames(genetopRF2)))
+ggvenn(list(DEseq2=rownames(genetopDEseq2),
+            Nebula=genetopNeb2$gene,
+            Wilcox=rownames(genetop_wilcox2),
+            RF=rownames(genetopRF2)))
 ```
+-->
 
 ## Gene functional analysis
 

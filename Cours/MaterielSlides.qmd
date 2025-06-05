@@ -1431,34 +1431,11 @@ RidgePlot(pbmc,features = rownames(SelectCl3vsCl5)[1])
 
 # Analysis pipeline for two (or more) biological conditions
 
-### Several types of integration
-
-::::{.columns}
-:::{.column width="50%"}
-![**Horizontal** integration](images/IntegHorizontal.png){width="90%"}
-:::
-:::{.column width="50%"}
-![**Vertical** integration](images/IntegVertical.png){width="90%"}
-:::
-::::
-
-- In the following, we focus on horizontal integration
-
-![](images/integ2.png){width="40%"}
-
-
-
-<!--
-A réfléchir : 
-- Si on a deux fichiers de données diff : 2 objets Seurat normalisés séparément puis intégration
-- Dans l'exemple ifnb c'est sous forme de layers (Seurat V5)
-
-https://nbisweden.github.io/workshop-scRNAseq/labs/seurat/seurat_03_integration.html
--->
+## Example and Seurat object
 
 ### Example
 
-- Data `ifnb` available in seurat-data
+- Data `ifnb` available in SeuratData
 
 ```{r}
 #| warning: false
@@ -1483,7 +1460,7 @@ table(ifnb$orig.ident) #table(ifnb$stim)
 ::: {.callout-warning title="Seurat" icon=false}
 - In Seurat v5, all the data in one Seurat object, but simply split it into multiple layers 
 
-- In previous versions, data had to be represented in different Seurat objects.. 
+- In previous versions, data had to be represented in different Seurat objects.
 :::
 
 ```{r}
@@ -1493,6 +1470,15 @@ ifnb
 dim(ifnb[["RNA"]]$counts.CTRL)
 dim(ifnb[["RNA"]]$counts.STIM)
 ```
+
+<!--
+A réfléchir : 
+- Si on a deux fichiers de données diff : 2 objets Seurat normalisés séparément puis intégration
+- Dans l'exemple ifnb c'est sous forme de layers (Seurat V5)
+
+https://nbisweden.github.io/workshop-scRNAseq/labs/seurat/seurat_03_integration.html
+-->
+
 
 <!--
 #### With default command from seurat data
@@ -1624,6 +1610,7 @@ FALSE  TRUE
 ```
 -->
 
+## Normalization and HVG
 
 ### Normalization
 
@@ -1637,15 +1624,23 @@ ifnb <- NormalizeData(ifnb)
 ```
 
 ::::{.columns}
-:::{.column width="50%"}
+:::{.column width="45%"}
+
+\tiny
 ```{r}
-ifnb@assays$RNA$data.CTRL[1:10,1:10]
+ifnb@assays$RNA$data.CTRL[1:10,1:5]
 ```
+\normalsize
+
 :::
-:::{.column width="50%"}
+:::{.column width="45%"}
+
+\tiny
 ```{r}
-ifnb@assays$RNA$data.STIM[1:10,1:10]
+ifnb@assays$RNA$data.STIM[1:10,1:5]
 ```
+\normalsize
+
 :::
 ::::
 
@@ -1660,12 +1655,12 @@ ifnb <- FindVariableFeatures(ifnb)
 ```
 
 ::::{.columns}
-:::{.column width="50%"}
+:::{.column width="45%"}
 ```{r}
 head(VariableFeatures(ifnb,assay="RNA",layer="counts.CTRL"))
 ```
 :::
-:::{.column width="50%"}
+:::{.column width="45%"}
 ```{r}
 head(VariableFeatures(ifnb,assay="RNA",layer="counts.STIM"))
 ```
@@ -1686,9 +1681,28 @@ plot2
 ifnb <- ScaleData(ifnb)
 ifnb <- RunPCA(ifnb)
 ifnb <- FindNeighbors(ifnb, dims = 1:30, reduction = "pca")
-ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
+ifnb <- RunUMAP(ifnb, dims = 1:30, 
+                reduction = "pca", 
+                reduction.name = "umap.unintegrated")
 DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim"))
 ```
+
+## Integration
+
+### Several types of integration
+
+::::{.columns}
+:::{.column width="50%"}
+![**Horizontal** integration](images/IntegHorizontal.png){width="90%"}
+:::
+:::{.column width="50%"}
+![**Vertical** integration](images/IntegVertical.png){width="90%"}
+:::
+::::
+
+- In the following, we focus on horizontal integration
+
+![](images/integ2.png){width="40%"}
 
 ### Overview
 

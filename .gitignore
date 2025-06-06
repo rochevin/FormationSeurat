@@ -5,4 +5,4 @@
 renv/*
 
 /.quarto/
-public/*
+#public/*

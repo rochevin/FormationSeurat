@@ -2962,7 +2962,7 @@ dotplot(ego,showCategory=10)
 
 # Some extensions/complements 
 
-## Slide pour rien 
+## Slide pour rien 2
 
 ## Spatial transcriptomic (ST)
 

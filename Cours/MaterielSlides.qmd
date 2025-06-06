@@ -2977,9 +2977,10 @@ ego %>% as_tibble()
 dotplot(ego,showCategory=10)
 ```
 
-# Pour aller plus loin
+# Some extensions/complements 
 
 ## Spatial transcriptomic (ST)
+
 
 ### ST Data
 
@@ -2992,34 +2993,48 @@ dotplot(ego,showCategory=10)
 
 ### Example
 
-Description: 
+- Mouse brain spatial expression for the anterior region ($G=31053$ genes across $C=2696$ spots) 
 
-- Mouse brain spatial expression for the anterior region
-
-$G=31053$ genes across $C=2696$ spots 
+:::: {.columns}
+::: {.column width="60%"}
 
 ```{r}
+#| message: false
+#| warning: false
+
 InstallData("stxBrain")
 brain <- LoadData("stxBrain", type = "anterior1")
 brain
 ```
 
-Contenu de l'objet : 
+```{r}
+#| message: false
+#| warning: false
+#| echo: false
+#| fig-width: 6
 
-![](images/Object-ST-1.png)
+SpatialFeaturePlot(brain, features = "nCount_Spatial") + 
+  theme(legend.position = "right")
+```
+
+:::
+::: {.column width="40%"}
+
+![](images/Object-ST-1.png){width="80%"}
+
 
 ```{r}
 brain@assays$Spatial$counts[1:6,1:10]
 brain@images$anterior1
 ```
 
-```{r}
-SpatialFeaturePlot(brain, features = "nCount_Spatial") + 
-  theme(legend.position = "right")
-```
+:::
+::::
 
-### Pipeline
 
+### Analysis Pipeline of ST data
+
+::: {.callout-note title="Pipeline" icon=false}
 - Normalization
 
 - Dimension reduction
@@ -3031,13 +3046,34 @@ SpatialFeaturePlot(brain, features = "nCount_Spatial") +
 - ....
 
 - Detecting **spatially-variable features**
+:::
+
+
 
 ### Normalization
 
-- Variance in molecular counts across spots is not just technical in nature, but also is dependent on the tissue anatomy. Standard approaches (such as the `LogNormalize()` function), which force each data point to have the same underlying ‘size’ after normalization, can be problematic.
+- Variance in molecular counts across spots is not just technical in nature, but also is dependent on the tissue anatomy
+
+- Standard approaches (such as the `LogNormalize()` function), which force each data point to have the same underlying "size" after normalization, can be problematic
 
 - Recommend using sctransform (Hafemeister and Satija, Genome Biology 2019)
 
+- `SCTransform()` replaces `NormalizeData()`, `ScaleData()`, and `FindVariableFeatures()`
+
+<!--
+@article{hafemeister2019normalization,
+  title={Normalization and variance stabilization of single-cell RNA-seq data using regularized negative binomial regression},
+  author={Hafemeister, Christoph and Satija, Rahul},
+  journal={Genome biology},
+  volume={20},
+  number={1},
+  pages={296},
+  year={2019},
+  publisher={Springer}
+}
+-->
+
+<!--
 regularized negative binomial models of gene expression in order to account for technical artifacts while preserving biological variance. 
 UMI counts across cells in a dataset are modeled using a generalized linear model (GLM). The total UMI count per cell is used as an offset in the GLM. 
 
@@ -3048,52 +3084,109 @@ with $n_c = \sum_g x_{gc}$.
 We perform three steps to remove technical noise and perform variance stabilization:
 
   - Step 1: the inverse overdispersion parameter $\theta$ is individually estimated using a subset of genes (2000 by default), which are sampled in a density-dependent manner according to their average abundance. 
+  
   Step 2:  we calculate a smoothed curve that characterizes the global relationship between $\mu$ and $\theta$, thereby regularizing $\theta$ estimates as a function of gene mean. We perform the same regularization for the intercept parameter. We use the geometric mean to estimate gene abundance, which is more robust to outlier values in scRNA-seq. As outlier values can originate from multiple sources including the presence of cell doublets, errors in UMI collapsing, or ambient RNA, we have empirically improved performance when using the geometric mean instead of the arithmetic mean. Although sctransform supports multiple estimators for $\theta$, we recommend the use
 of glmGamPoi, an alternate estimator that is more robust and faster.
 
   - Step 3: we use the regularized parameter estimates to calculate Pearson
 residuals $Z_{gc}$. The “residual variance” for a gene represents the remaining variation in gene expression that is not explained by the sctransform model,
+-->
 
-- `sctransform` normalizes the data, detects high-variance features, and stores the data in the SCT assay.
+:::: {.columns}
+::: {.column width="50%"}
+```{r}
+#| message: false
+#| warning: false
 
+brain <- SCTransform(brain, 
+            assay = "Spatial",
+            verbose = FALSE)
+brain@assays$SCT
+VariableFeaturePlot(brain)
+```
+:::
+::: {.column width="50%"}
 ![](images/Object-ST-2.png)
 
-
 ```{r}
-#Normalization
-brain <- SCTransform(brain, assay = "Spatial", verbose = FALSE)
-brain@assays$SCT
-
-##-> englobe etape de normalisation, HVG, scale data
-VariableFeaturePlot(brain)
+#| message: false
+#| warning: false
 
 SpatialFeaturePlot(brain, features = c("Ttr","Hbb-bs"))
 ```
 
+:::
+::::
+
+
 ### Dimension reduction
 
+:::: {.columns}
+::: {.column width="50%"}
 ```{r}
-#Dimension reduction
+#| message: false
+#| warning: false
+#| fig-width: 5
+
 brain <- RunPCA(brain, assay = "SCT", verbose = FALSE)
 brain <- FindNeighbors(brain, reduction = "pca", dims = 1:30)
 brain <- RunUMAP(brain, reduction = "pca", dims = 1:30)
 DimPlot(brain, reduction = "umap")+NoLegend()
 ```
-
+:::
+::: {.column width="50%"}
 
 ![](images/Object-ST-3.png)
-
+:::
+::::
 
 
 ### Clustering 
 
-![](images/Cheng-BriefInform2023.png)
+:::: {.columns}
+::: {.column width="50%"}
+- Some clustering methods for ST 
+![Cheng et al., 2023](images/Cheng-BriefInform2023.png){width="80%"}
 
-![](images/Xiongetal-bioRxiv2025.png)
+<!--
+@article{cheng2023benchmarking,
+  title={Benchmarking cell-type clustering methods for spatially resolved transcriptomics data},
+  author={Cheng, Andrew and Hu, Guanyu and Li, Wei Vivian},
+  journal={Briefings in bioinformatics},
+  volume={24},
+  number={1},
+  pages={bbac475},
+  year={2023},
+  publisher={Oxford University Press}
+}
+-->
+:::
+::: {.column width="50%"}
 
-Exemple avec BayesSpace
+![Xiong et al., bioRxiv25](images/Xiongetal-bioRxiv2025.png){width="80%"}
+<!--
+@article{xiong2025comprehensive,
+  title={A comprehensive comparison on clustering methods for multi-slide spatially resolved transcriptomics data analysis},
+  author={Xiong, Caiwei and Shuai, Huang and Zhou, Muqing and Zhang, Yiyan and Wu, Wenrong and Li, Xihao and Yao, Huaxiu and Chen, Jiawen and Li, Yun},
+  journal={bioRxiv},
+  pages={2025--01},
+  year={2025},
+  publisher={Cold Spring Harbor Laboratory}
+}
+-->
+
+:::
+::::
+
+### Example with BayesSpace
+
+- See code in exercice
 
 ```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
 library(BayesSpace)
 diet.seurat = Seurat::DietSeurat(brain,
                                    graphs = "SCT_nn",
@@ -3118,7 +3211,12 @@ brain@meta.data[["BayesSpace"]] <- as.factor(sce_brain$spatial.cluster)
 ```
 
 ```{r}
-table(brain$BayesSpace) # mettre plutot le graphe
+#| echo: false
+#| warning: false
+#| message: false
+
+#table(brain$BayesSpace) # mettre plutot le graphe
+EffPlot(brain,clustname="BayesSpace",resolution=NULL)
 
 p1<-SpatialDimPlot(brain, "BayesSpace",label=TRUE,label.size=2)
 
@@ -3126,16 +3224,55 @@ p2<-DimPlot(brain, reduction = "umap",group.by="BayesSpace",label=TRUE)
 p1+p2
 ```
 
-Fonctions interaction dans Seurat non montrées ici
+
 
 ### Spatial variable features
 
->Identify features whose variability in expression can be explained to some degree by spatial location
+- Goal: Identify features whose variability in expression can be explained to some degree by spatial location
 
-> An alternative approach, implemented in FindSpatiallyVariables(), is to search for features exhibiting spatial patterning in the absence of pre-annotation. The default method (method = 'markvariogram), is inspired by the Trendsceek, which models spatial transcriptomics data as a mark point process and computes a ‘variogram’, which identifies genes whose expression level is dependent on their spatial location. More specifically, this process calculates gamma(r) values measuring the dependence between two spots a certain “r” distance apart. By default, we use an r-value of ‘5’ in these analyses, and only compute these values for variable genes (where variation is calculated independently of spatial location) to save time.
-We note that there are multiple methods in the literature to accomplish this task, including SpatialDE, and Splotch. We encourage interested users to explore these methods, and hope to add support for them in the near future.
+::: {.callout-warning title="Seurat" icon=false}
+- Function `FindSpatiallyVariableFeatures()`
+
+- Methods: 
+  + markvariogram: Wraps the functionality of markvario from the `spatstat` package (Walder and Stoyan, 96)
+  + moransi: Wraps the functionality of the Moran.I function from the `ape` package (Gittleman and Kot, 90)
+
+:::
+
+
+- Other approaches in the literature: SpatialDE and Splotch for instance
+
+
+
+<!--
+@article{gittleman1990adaptation,
+  title={Adaptation: statistics and a null model for estimating phylogenetic effects},
+  author={Gittleman, John L and Kot, Mark},
+  journal={Systematic Zoology},
+  volume={39},
+  number={3},
+  pages={227--241},
+  year={1990},
+  publisher={Society of Systematic Zoology}
+}
+@article{walder1996variograms,
+  title={On variograms in point process statistics},
+  author={W{\"a}lder, Olga and Stoyan, Dietrich},
+  journal={Biometrical Journal},
+  volume={38},
+  number={8},
+  pages={895--905},
+  year={1996},
+  publisher={Wiley Online Library}
+}
+
+-->
+
 
 ```{r}
+#| message: false
+#| warning: false
+
 brain <- FindSpatiallyVariableFeatures(brain, 
                                        assay = "SCT", 
                                        features=VariableFeatures(brain)[1:1000],
@@ -3143,6 +3280,10 @@ brain <- FindSpatiallyVariableFeatures(brain,
 ```
 
 ```{r}
+#| message: false
+#| warning: false
+#| echo: false
+
 ##PB
 #top.features <- head(SpatiallyVariableFeatures(brain, method = "moransi"), 6)
 # dans forum pointe le pb
@@ -3162,21 +3303,52 @@ SpatialFeaturePlot(brain, features = top.features, ncol = 3, alpha = c(0.1, 1))
 
 ## Pseudotime
 
+### Principle of trajectory inference
+
 - Trajectory inference aims to reconstruct a cellular dynamic process
 - 2 main steps:
   + Dimensionality reduction step: PCA, t-SNE, . . . . or graph-based
 techniques . . . . or clustering methods
   + Trajectory modelling step
-- Reviews:
-  + [Cannoodt et al., 2016] : comparison of 10 methods
-  + [Saelens et al., 2018] : comparison of 29 (among 59 existing) methods
+  
+![](images/MethodesPseudotime.png)  
+  
+  
+### Review
 
+- Some references: 
+  + Cannoodt et al.(2016) : comparison of 10 methods
+  + Saelens et al. (2019) : comparison of 29 (among 59 existing) methods
+  
+- [Dyno](https://dynverse.org/users/) contains a set of package to infer, visualise and interpret single-cell trajectories
 
-https://github.com/dynverse/dynverse
-
-![](images/MethodesPseudotime.png)
 ![](images/CompPseudoTime.png)
 ![](images/CompPseudotime2.png)
+
+<!--
+@article{cannoodt2016computational,
+  title={Computational methods for trajectory inference from single-cell transcriptomics},
+  author={Cannoodt, Robrecht and Saelens, Wouter and Saeys, Yvan},
+  journal={European journal of immunology},
+  volume={46},
+  number={11},
+  pages={2496--2506},
+  year={2016},
+  publisher={Wiley Online Library}
+}
+
+@article{saelens2019comparison,
+  title={A comparison of single-cell trajectory inference methods},
+  author={Saelens, Wouter and Cannoodt, Robrecht and Todorov, Helena and Saeys, Yvan},
+  journal={Nature biotechnology},
+  volume={37},
+  number={5},
+  pages={547--554},
+  year={2019},
+  publisher={Nature Publishing Group US New York}
+}
+-->
+
 
 
 ## Comment basculer entre Seurat / Scanpy / SingleCellExperiment

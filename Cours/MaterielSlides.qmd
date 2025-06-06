@@ -2390,9 +2390,6 @@ genetopNeb2<-ifnbNebSumm2%>%
 :::: {.columns}
 ::: {.column width="45%"}
 ```r
-#| echo: false
-#| message: false
-#| warning: false
 library(ggvenn)
 ggvenn(list(DEseq2=rownames(genetopDEseq2),
             Nebula=genetopNeb2$gene,
@@ -2405,9 +2402,6 @@ ggvenn(list(DEseq2=rownames(genetopDEseq2),
 Result with DESeq2: 
 
 ```r
-#| echo: false
-#| message: false
-#| warning: false
 pheatmap(pseudo_ifnb2@assays$RNA$scale.data[rownames(genetopDEseq2),],
          cluster_cols = FALSE,       
          scale = "column",              
@@ -2472,18 +2466,6 @@ DotPlot(ifnb,features=rownames(genetopRF2)[1:10],group.by="stim")+
 #         show_rownames = FALSE,
 #         show_colnames = TRUE)
 ```
-
-<!--
-### Comparison
-
-```{r}
-library(ggvenn)
-ggvenn(list(DEseq2=rownames(genetopDEseq2),
-            Nebula=genetopNeb2$gene,
-            Wilcox=rownames(genetop_wilcox2),
-            RF=rownames(genetopRF2)))
-```
--->
 
 ## Gene functional analysis
 

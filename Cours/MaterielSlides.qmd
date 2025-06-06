@@ -27,6 +27,7 @@ Mettre ici les infos pour la mise en place .....
 
 ```{r}
 library(Seurat)
+library(DESeq2)
 library(patchwork)
 library(tidyverse)
 library(dplyr)
@@ -2299,7 +2300,7 @@ genetop_wilcox2<-res2_Wilcox %>%
 #  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-```{r}
+```r
 #| echo: false
 #| message: false
 #| warning: false
@@ -2323,7 +2324,7 @@ resDEseq2<-results(dds2,name="stim_STIM_vs_CTRL")
 ```
 
 
-```{r}
+```r
 #| echo: false
 #| message: false
 #| warning: false
@@ -2345,7 +2346,7 @@ genetopDEseq2<-as.data.frame(resDEseq2) %>%
 
 
 
-```{r}
+```r
 #| echo: false
 #| message: false
 #| warning: false
@@ -2366,7 +2367,7 @@ ifnbNebSumm2<-ifnbNebSumm2%>%
 #head(ifnbNebSumm2)
 ```
 
-```{r}
+```r
 #| echo: false
 #| message: false
 #| warning: false
@@ -2388,7 +2389,7 @@ genetopNeb2<-ifnbNebSumm2%>%
 
 :::: {.columns}
 ::: {.column width="45%"}
-```{r}
+```r
 #| echo: false
 #| message: false
 #| warning: false
@@ -2403,7 +2404,7 @@ ggvenn(list(DEseq2=rownames(genetopDEseq2),
 ::: {.column width="45%"}
 Result with DESeq2: 
 
-```{r}
+```r
 #| echo: false
 #| message: false
 #| warning: false

@@ -3,6 +3,7 @@ if(!require("pak")){
   require("pak")
 }
 # System Librairies required : libhdf5-dev, libgsl27
+# Maybe libglpk-dev
 
 if(!require("BPCells")){pak::pkg_install("bnprks/BPCells/r",dependencies = T)}
 if(!require("presto")){pak::pkg_install("immunogenomics/presto",dependencies = T)}
@@ -29,3 +30,6 @@ if(!require("clusterProfiler")){pak::pkg_install("clusterProfiler",dependencies 
 if(!require("enrichplot")){pak::pkg_install("enrichplot",dependencies = T)}
 if(!require("org.Hs.eg.db")){pak::pkg_install("org.Hs.eg.db",dependencies = T)}
 if(!require("ggupset")){pak::pkg_install("ggupset",dependencies = T)}
+if(!require("BayesSpace")){pak::pkg_install("BayesSpace",dependencies = T)}
+# asked for SpatialFeaturePlot(), skip if not spatial
+if(!require("glmGamPoi")){pak::pkg_install("glmGamPoi",dependencies = T)} 

@@ -39,6 +39,7 @@ library(ggplot2)
 library(mvtnorm)
 library(FactoMineR)
 library(gridExtra)
+require(gt)
 
 source("Cours/FunctionsAux.R")
 # devtools::install_github('satijalab/seurat-data')
@@ -2781,7 +2782,6 @@ $$
 
 ```{r, warning=FALSE,message=FALSE}
 require(clusterProfiler)
-require(gt)
 require(org.Hs.eg.db)
 # eg = bitr(rownames(genetop_wilcox1), fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
 # go_enrichment <- enrichGO(eg$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db, keyType = "ENTREZID", ont = "BP")

@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="en"><head>
-<script src="index_files/libs/clipboard/clipboard.min.js"></script>
-<script src="index_files/libs/quarto-html/tabby.min.js"></script>
-<script src="index_files/libs/quarto-html/popper.min.js"></script>
-<script src="index_files/libs/quarto-html/tippy.umd.min.js"></script>
-<link href="index_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="index_files/libs/quarto-html/light-border.css" rel="stylesheet">
-<link href="index_files/libs/quarto-html/quarto-html.min.css" rel="stylesheet" data-mode="light">
-<link href="index_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html.min.css" rel="stylesheet" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
   <meta name="generator" content="quarto-1.5.57">
 
   <meta name="author" content="Cathy Maugis &amp; Vincent Rocher">
-  <title>Initiation à l’analyse de données single-cell RNA-seq avec Seurat</title>
+  <title>Formation Seurat pour la plateforme Genotoul Biostat – Initiation à l’analyse de données single-cell RNA-seq avec Seurat</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
-  <link rel="stylesheet" href="index_files/libs/revealjs/dist/reset.css">
-  <link rel="stylesheet" href="index_files/libs/revealjs/dist/reveal.css">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/reveal.css">
   <style>
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
@@ -115,11 +115,11 @@
     div.csl-indent {
       margin-left: 2em;
     }  </style>
-  <link rel="stylesheet" href="index_files/libs/revealjs/dist/theme/quarto.css">
-  <link href="index_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
-  <link href="index_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
-  <link href="index_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
-  <link href="index_files/libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/theme/quarto.css">
+  <link href="../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
   <style type="text/css">
 
   .callout {
@@ -405,8 +405,8 @@
       margin-right: 0; 
     }
   </style>
-  <link href="index_files/libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
-  <script src="index_files/libs/pagedtable-1.1/js/pagedtable.js"></script>
+  <link href="../site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
+  <script src="../site_libs/pagedtable-1.1/js/pagedtable.js"></script>
 </head>
 <body class="quarto-light">
   <div class="reveal">
@@ -589,13 +589,13 @@ Figure&nbsp;2
 <ul>
 <li>3 fichiers : features, barcode et table de comptage (<em>matrix.mtx</em>)</li>
 </ul>
-<div class="sourceCode" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href=""></a><span class="fu">Read10X</span>(</span>
-<span id="cb1-2"><a href=""></a>  data.dir,</span>
-<span id="cb1-3"><a href=""></a>  <span class="at">gene.column =</span> <span class="dv">2</span>,</span>
-<span id="cb1-4"><a href=""></a>  <span class="at">cell.column =</span> <span class="dv">1</span>,</span>
-<span id="cb1-5"><a href=""></a>  <span class="at">unique.features =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb1-6"><a href=""></a>  <span class="at">strip.suffix =</span> <span class="cn">FALSE</span></span>
-<span id="cb1-7"><a href=""></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a></a><span class="fu">Read10X</span>(</span>
+<span id="cb1-2"><a></a>  data.dir,</span>
+<span id="cb1-3"><a></a>  <span class="at">gene.column =</span> <span class="dv">2</span>,</span>
+<span id="cb1-4"><a></a>  <span class="at">cell.column =</span> <span class="dv">1</span>,</span>
+<span id="cb1-5"><a></a>  <span class="at">unique.features =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb1-6"><a></a>  <span class="at">strip.suffix =</span> <span class="cn">FALSE</span></span>
+<span id="cb1-7"><a></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div><div class="column">
 <h3 id="pour-alevin">Pour alevin</h3>
 <ul>
@@ -623,8 +623,8 @@ Figure&nbsp;2
 </div>
 </div>
 </div>
-<div class="sourceCode" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href=""></a><span class="co"># Reading in the alevin quants quants using tximport</span></span>
-<span id="cb2-2"><a href=""></a>txi <span class="ot">&lt;-</span> <span class="fu">tximport</span>(files, <span class="at">type=</span><span class="st">"alevin"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a></a><span class="co"># Reading in the alevin quants quants using tximport</span></span>
+<span id="cb2-2"><a></a>txi <span class="ot">&lt;-</span> <span class="fu">tximport</span>(files, <span class="at">type=</span><span class="st">"alevin"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div></div>
 </section>
 <section id="de-la-question-bio-à-la-question-stat" class="slide level2">
@@ -838,8 +838,8 @@ AAACGCACTGGTAC-1     pbmc3k       2163          781</code></pre>
 <li>Number of genes detected per UMI: this metric with give us an idea of the complexity of our dataset (more genes detected per UMI, more complex our data)</li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href=""></a>pbmc<span class="sc">$</span>log10GenesPerUMI <span class="ot">&lt;-</span> <span class="fu">log10</span>(pbmc<span class="sc">$</span>nFeature_RNA) <span class="sc">/</span>   <span class="fu">log10</span>(pbmc<span class="sc">$</span>nCount_RNA)</span>
-<span id="cb6-2"><a href=""></a><span class="fu">VlnPlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"log10GenesPerUMI"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a></a>pbmc<span class="sc">$</span>log10GenesPerUMI <span class="ot">&lt;-</span> <span class="fu">log10</span>(pbmc<span class="sc">$</span>nFeature_RNA) <span class="sc">/</span>   <span class="fu">log10</span>(pbmc<span class="sc">$</span>nCount_RNA)</span>
+<span id="cb6-2"><a></a><span class="fu">VlnPlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"log10GenesPerUMI"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure>
@@ -853,9 +853,9 @@ AAACGCACTGGTAC-1     pbmc3k       2163          781</code></pre>
 <li>Mitochondrial ratio: this metric will give us a percentage of cell reads originating from the mitochondrial genes The number of genes per UMI for each cell is quite easy to calculate, and we will log10 transform the result for better comparison between samples. function <code>PercentageFeatureSet()</code></li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href=""></a>pbmc[[<span class="st">"percent.mt"</span>]] <span class="ot">&lt;-</span> <span class="fu">PercentageFeatureSet</span>(pbmc, </span>
-<span id="cb7-2"><a href=""></a>                                             <span class="at">pattern =</span> <span class="st">"^MT-"</span>)</span>
-<span id="cb7-3"><a href=""></a><span class="fu">head</span>(pbmc<span class="sc">@</span>meta.data, <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a></a>pbmc[[<span class="st">"percent.mt"</span>]] <span class="ot">&lt;-</span> <span class="fu">PercentageFeatureSet</span>(pbmc, </span>
+<span id="cb7-2"><a></a>                                             <span class="at">pattern =</span> <span class="st">"^MT-"</span>)</span>
+<span id="cb7-3"><a></a><span class="fu">head</span>(pbmc<span class="sc">@</span>meta.data, <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                 orig.ident nCount_RNA nFeature_RNA log10GenesPerUMI percent.mt
 AAACATACAACCAC-1     pbmc3k       2419          779        0.8545652  3.0177759
@@ -864,7 +864,7 @@ AAACATTGATCAGC-1     pbmc3k       3147         1129        0.8727227  0.8897363
 AAACCGTGCTTCCG-1     pbmc3k       2639          960        0.8716423  1.7430845
 AAACCGTGTATGCG-1     pbmc3k        980          521        0.9082689  1.2244898</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href=""></a><span class="fu">VlnPlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"percent.mt"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a></a><span class="fu">VlnPlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"percent.mt"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure>
@@ -942,9 +942,9 @@ AAACCGTGTATGCG-1     pbmc3k        980          521        0.9082689  1.2244898<
 </section>
 <section id="example" class="slide level2">
 <h2>Example</h2>
-<div class="sourceCode" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href=""></a> pbmc <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(pbmc, </span>
-<span id="cb10-2"><a href=""></a>                       <span class="at">normalization.method =</span> <span class="st">"LogNormalize"</span>, </span>
-<span id="cb10-3"><a href=""></a>                       <span class="at">scale.factor =</span> <span class="dv">10000</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a></a> pbmc <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(pbmc, </span>
+<span id="cb10-2"><a></a>                       <span class="at">normalization.method =</span> <span class="st">"LogNormalize"</span>, </span>
+<span id="cb10-3"><a></a>                       <span class="at">scale.factor =</span> <span class="dv">10000</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 <img data-src="images/SO-4.png" class="quarto-figure quarto-figure-center r-stretch" style="width:90.0%"></section>
 <section id="high-variable-gene-hvg" class="slide level2">
@@ -969,12 +969,12 @@ z_{gc} = \frac{x_{gc}-\bar{x}_g}{\sigma_g}
 </section>
 <section id="identification-des-gènes-hvg" class="slide level2">
 <h2>Identification des gènes HVG</h2>
-<div class="sourceCode" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href=""></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindVariableFeatures</span>(pbmc, </span>
-<span id="cb11-2"><a href=""></a>                             <span class="at">selection.method =</span> <span class="st">"vst"</span>, </span>
-<span id="cb11-3"><a href=""></a>                             <span class="at">nfeatures =</span> <span class="dv">2000</span>)</span>
-<span id="cb11-4"><a href=""></a>top10<span class="ot">&lt;-</span><span class="fu">head</span>(<span class="fu">VariableFeatures</span>(pbmc), <span class="dv">10</span>)</span>
-<span id="cb11-5"><a href=""></a>plot1 <span class="ot">&lt;-</span> <span class="fu">VariableFeaturePlot</span>(pbmc)</span>
-<span id="cb11-6"><a href=""></a>plot2 <span class="ot">&lt;-</span> <span class="fu">LabelPoints</span>(<span class="at">plot =</span> plot1, <span class="at">points =</span> top10, <span class="at">repel =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindVariableFeatures</span>(pbmc, </span>
+<span id="cb11-2"><a></a>                             <span class="at">selection.method =</span> <span class="st">"vst"</span>, </span>
+<span id="cb11-3"><a></a>                             <span class="at">nfeatures =</span> <span class="dv">2000</span>)</span>
+<span id="cb11-4"><a></a>top10<span class="ot">&lt;-</span><span class="fu">head</span>(<span class="fu">VariableFeatures</span>(pbmc), <span class="dv">10</span>)</span>
+<span id="cb11-5"><a></a>plot1 <span class="ot">&lt;-</span> <span class="fu">VariableFeaturePlot</span>(pbmc)</span>
+<span id="cb11-6"><a></a>plot2 <span class="ot">&lt;-</span> <span class="fu">LabelPoints</span>(<span class="at">plot =</span> plot1, <span class="at">points =</span> top10, <span class="at">repel =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 <img data-src="images/HVG.png" class="quarto-figure quarto-figure-center r-stretch" style="width:90.0%"></section>
 <section id="réduction-de-dimension" class="slide level2">
@@ -1032,7 +1032,7 @@ z_{gc} = \frac{x_{gc}-\bar{x}_g}{\sigma_g}
 </div>
 <div class="fragment">
 <p>Dans Seurat, fonction <code>ScaleData()</code></p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href=""></a>pbmc<span class="ot">&lt;-</span><span class="fu">ScaleData</span>(pbmc) <span class="co">#features = Default is variable features J (=2000 par défaut)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a></a>pbmc<span class="ot">&lt;-</span><span class="fu">ScaleData</span>(pbmc) <span class="co">#features = Default is variable features J (=2000 par défaut)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="columns">
 <div class="column">
 <div class="cell" data-layout-align="center">
@@ -1089,8 +1089,8 @@ z_{gc} = \frac{x_{gc}-\bar{x}_g}{\sigma_g}
 <ul>
 <li>L’ACP est faite sur les données centrées réduites à l’aide de la fonction <code>runPCA()</code></li>
 </ul>
-<div class="sourceCode" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href=""></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunPCA</span>(pbmc, <span class="at">features =</span> <span class="fu">VariableFeatures</span>(<span class="at">object =</span> pbmc))</span>
-<span id="cb13-2"><a href=""></a>  <span class="co">#str(pbmc@reductions$pca)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunPCA</span>(pbmc, <span class="at">features =</span> <span class="fu">VariableFeatures</span>(<span class="at">object =</span> pbmc))</span>
+<span id="cb13-2"><a></a>  <span class="co">#str(pbmc@reductions$pca)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Mais probleme de l’ACP sur les données scRNAseq</p>
 <div style="font-size: 80%;">
 <ul>
@@ -1101,10 +1101,10 @@ z_{gc} = \frac{x_{gc}-\bar{x}_g}{\sigma_g}
 </div>
 <div class="columns">
 <div class="column">
-<div class="sourceCode" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href=""></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"pca"</span>) <span class="sc">+</span> <span class="fu">NoLegend</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"pca"</span>) <span class="sc">+</span> <span class="fu">NoLegend</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><img data-src="images/PCA.png" style="width:90.0%"></p>
 </div><div class="column">
-<div class="sourceCode" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href=""></a><span class="fu">DimHeatmap</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">cells =</span> <span class="dv">500</span>, <span class="at">balanced =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a></a><span class="fu">DimHeatmap</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">cells =</span> <span class="dv">500</span>, <span class="at">balanced =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><img data-src="images/heatmap_pca.png" style="width:80.0%"></p>
 </div></div>
 </section>
@@ -1134,9 +1134,9 @@ z_{gc} = \frac{x_{gc}-\bar{x}_g}{\sigma_g}
 <section id="t-sne-with-seurat" class="slide level2">
 <h2>t-SNE with Seurat</h2>
 <h3 id="example-1">Example</h3>
-<div class="sourceCode" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href=""></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindNeighbors</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span>
-<span id="cb16-2"><a href=""></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunTSNE</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span>
-<span id="cb16-3"><a href=""></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"tsne"</span>)<span class="sc">+</span><span class="fu">NoLegend</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindNeighbors</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span>
+<span id="cb16-2"><a></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunTSNE</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span>
+<span id="cb16-3"><a></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"tsne"</span>)<span class="sc">+</span><span class="fu">NoLegend</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="columns">
 <div class="column">
 <p><img data-src="images/t-sne.png"></p>
@@ -1180,9 +1180,9 @@ z_{gc} = \frac{x_{gc}-\bar{x}_g}{\sigma_g}
 </div>
 </div>
 </div>
-<div class="sourceCode" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href=""></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindNeighbors</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span>
-<span id="cb17-2"><a href=""></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunUMAP</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span>
-<span id="cb17-3"><a href=""></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"umap"</span>)<span class="sc">+</span><span class="fu">NoLegend</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindNeighbors</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span>
+<span id="cb17-2"><a></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunUMAP</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span>
+<span id="cb17-3"><a></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"umap"</span>)<span class="sc">+</span><span class="fu">NoLegend</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="columns">
 <div class="column">
 <p><img data-src="images/pbmc_umap_1.png"></p>
@@ -1250,26 +1250,26 @@ z_{gc} = \frac{x_{gc}-\bar{x}_g}{\sigma_g}
 <ul>
 <li>Clustering pour une résolution de <span class="math inline">\(0.5\)</span></li>
 </ul>
-<div class="sourceCode" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href=""></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindClusters</span>(pbmc, <span class="at">resolution =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindClusters</span>(pbmc, <span class="at">resolution =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="clustering-dans-seurat-1" class="slide level2">
 <h2>Clustering dans Seurat</h2>
 <h3 id="choix-de-la-résolution">Choix de la résolution</h3>
-<div class="sourceCode" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href=""></a>list_resolutions<span class="ot">&lt;-</span><span class="fu">seq</span>(<span class="fl">0.1</span>,<span class="dv">1</span>,<span class="at">by=</span><span class="fl">0.1</span>)</span>
-<span id="cb19-2"><a href=""></a><span class="cf">for</span> (r <span class="cf">in</span> list_resolutions){</span>
-<span id="cb19-3"><a href=""></a>    pbmc <span class="ot">&lt;-</span> <span class="fu">FindClusters</span>(pbmc, <span class="at">resolution =</span> r, <span class="at">cluster.name =</span> <span class="fu">paste0</span>(<span class="st">"Clusters_"</span>, r))</span>
-<span id="cb19-4"><a href=""></a>}</span>
-<span id="cb19-5"><a href=""></a></span>
-<span id="cb19-6"><a href=""></a>clusterplot<span class="ot">&lt;-</span><span class="fu">clustree</span>(pbmc, <span class="at">prefix =</span> <span class="st">"Clusters_"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a></a>list_resolutions<span class="ot">&lt;-</span><span class="fu">seq</span>(<span class="fl">0.1</span>,<span class="dv">1</span>,<span class="at">by=</span><span class="fl">0.1</span>)</span>
+<span id="cb19-2"><a></a><span class="cf">for</span> (r <span class="cf">in</span> list_resolutions){</span>
+<span id="cb19-3"><a></a>    pbmc <span class="ot">&lt;-</span> <span class="fu">FindClusters</span>(pbmc, <span class="at">resolution =</span> r, <span class="at">cluster.name =</span> <span class="fu">paste0</span>(<span class="st">"Clusters_"</span>, r))</span>
+<span id="cb19-4"><a></a>}</span>
+<span id="cb19-5"><a></a></span>
+<span id="cb19-6"><a></a>clusterplot<span class="ot">&lt;-</span><span class="fu">clustree</span>(pbmc, <span class="at">prefix =</span> <span class="st">"Clusters_"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 <img data-src="images/clustree.png" class="quarto-figure quarto-figure-center r-stretch" style="width:80.0%"></section>
 <section id="clustering-dans-seurat-2" class="slide level2">
 <h2>Clustering dans Seurat</h2>
 <div class="columns">
 <div class="column">
-<div class="sourceCode" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href=""></a><span class="fu">Idents</span>(pbmc)<span class="ot">&lt;-</span>pbmc<span class="sc">@</span>meta.data<span class="sc">$</span>Clusters_0<span class="fl">.5</span></span>
-<span id="cb20-2"><a href=""></a>pbmc<span class="sc">$</span>seurat_clusters<span class="ot">&lt;-</span>pbmc<span class="sc">@</span>meta.data<span class="sc">$</span>Clusters_0<span class="fl">.5</span></span>
-<span id="cb20-3"><a href=""></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"umap"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a></a><span class="fu">Idents</span>(pbmc)<span class="ot">&lt;-</span>pbmc<span class="sc">@</span>meta.data<span class="sc">$</span>Clusters_0<span class="fl">.5</span></span>
+<span id="cb20-2"><a></a>pbmc<span class="sc">$</span>seurat_clusters<span class="ot">&lt;-</span>pbmc<span class="sc">@</span>meta.data<span class="sc">$</span>Clusters_0<span class="fl">.5</span></span>
+<span id="cb20-3"><a></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"umap"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="quarto-figure quarto-figure-center">
 <figure>
 <p><img data-src="images/umap_cluster.png" class="quarto-figure quarto-figure-center" style="width:80.0%"></p>
@@ -1309,11 +1309,11 @@ z_{gc} = \frac{x_{gc}-\bar{x}_g}{\sigma_g}
 <li>Test de Wilcoxon : test non paramétrique basé sur les rangs</li>
 <li>Correction de tests multiples (dans Seurat, Bonferroni)</li>
 </ul>
-<div class="sourceCode" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href=""></a>GeneMkWilcox3<span class="ot">&lt;-</span><span class="fu">FindMarkers</span>(pbmc,</span>
-<span id="cb21-2"><a href=""></a>                           <span class="at">test.use =</span> <span class="st">"wilcox"</span>,</span>
-<span id="cb21-3"><a href=""></a>                           <span class="at">ident.1 =</span> <span class="dv">3</span>,</span>
-<span id="cb21-4"><a href=""></a>                           <span class="at">logfc.threshold=</span><span class="fl">0.5</span>)</span>
-<span id="cb21-5"><a href=""></a><span class="fu">sum</span>(GeneMkWilcox3<span class="sc">$</span>p_val_adj<span class="sc">&lt;</span><span class="fl">0.01</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a></a>GeneMkWilcox3<span class="ot">&lt;-</span><span class="fu">FindMarkers</span>(pbmc,</span>
+<span id="cb21-2"><a></a>                           <span class="at">test.use =</span> <span class="st">"wilcox"</span>,</span>
+<span id="cb21-3"><a></a>                           <span class="at">ident.1 =</span> <span class="dv">3</span>,</span>
+<span id="cb21-4"><a></a>                           <span class="at">logfc.threshold=</span><span class="fl">0.5</span>)</span>
+<span id="cb21-5"><a></a><span class="fu">sum</span>(GeneMkWilcox3<span class="sc">$</span>p_val_adj<span class="sc">&lt;</span><span class="fl">0.01</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <pre><code></code></pre>
 <p>[1] 640</p>
 <pre><code>
@@ -1603,10 +1603,10 @@ ggplot(GeneMkAUC3,aes(x=myAUC))+
 <!-- -->
 <h3 id="bitr-biological-id-translator"><code>bitr</code>: Biological Id TranslatoR</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href=""></a><span class="fu">require</span>(clusterProfiler)</span>
-<span id="cb24-2"><a href=""></a>genes <span class="ot">&lt;-</span> bulk.cond1  <span class="sc">|&gt;</span> <span class="fu">filter</span>(p_val_adj<span class="sc">&lt;</span><span class="fl">0.01</span>)  <span class="sc">|&gt;</span> <span class="fu">rownames</span>()</span>
-<span id="cb24-3"><a href=""></a>eg <span class="ot">=</span> <span class="fu">bitr</span>(genes, <span class="at">fromType=</span><span class="st">"SYMBOL"</span>, <span class="at">toType=</span><span class="st">"ENTREZID"</span>, <span class="at">OrgDb=</span><span class="st">"org.Hs.eg.db"</span>)</span>
-<span id="cb24-4"><a href=""></a>eg  <span class="sc">|&gt;</span> <span class="fu">as_tibble</span>()  <span class="sc">|&gt;</span>  rmarkdown<span class="sc">::</span><span class="fu">paged_table</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a></a><span class="fu">require</span>(clusterProfiler)</span>
+<span id="cb24-2"><a></a>genes <span class="ot">&lt;-</span> bulk.cond1  <span class="sc">|&gt;</span> <span class="fu">filter</span>(p_val_adj<span class="sc">&lt;</span><span class="fl">0.01</span>)  <span class="sc">|&gt;</span> <span class="fu">rownames</span>()</span>
+<span id="cb24-3"><a></a>eg <span class="ot">=</span> <span class="fu">bitr</span>(genes, <span class="at">fromType=</span><span class="st">"SYMBOL"</span>, <span class="at">toType=</span><span class="st">"ENTREZID"</span>, <span class="at">OrgDb=</span><span class="st">"org.Hs.eg.db"</span>)</span>
+<span id="cb24-4"><a></a>eg  <span class="sc">|&gt;</span> <span class="fu">as_tibble</span>()  <span class="sc">|&gt;</span>  rmarkdown<span class="sc">::</span><span class="fu">paged_table</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div data-pagedtable="false">
   <script data-pagedtable-source="" type="application/json">
@@ -1678,18 +1678,18 @@ ggplot(GeneMkAUC3,aes(x=myAUC))+
 <h2>GO over-representation analysis with <code>R</code></h2>
 <p>The clusterProfiler package implements <code>enrichGO()</code> for gene ontology over-representation test.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href=""></a>org.db <span class="ot">&lt;-</span> org.Hs.eg.db<span class="sc">::</span>org.Hs.eg.db</span>
-<span id="cb25-2"><a href=""></a>ego <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(<span class="at">gene          =</span> eg<span class="sc">$</span>ENTREZID,</span>
-<span id="cb25-3"><a href=""></a>                <span class="at">universe      =</span> <span class="cn">NULL</span>,</span>
-<span id="cb25-4"><a href=""></a>                <span class="at">OrgDb         =</span> org.db,</span>
-<span id="cb25-5"><a href=""></a>                <span class="at">keyType =</span> <span class="st">"ENTREZID"</span>,</span>
-<span id="cb25-6"><a href=""></a>                <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
-<span id="cb25-7"><a href=""></a>                <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
-<span id="cb25-8"><a href=""></a>                <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb25-9"><a href=""></a>                <span class="at">qvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb25-10"><a href=""></a>                <span class="at">readable      =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb25-11"><a href=""></a></span>
-<span id="cb25-12"><a href=""></a>ego <span class="sc">|&gt;</span> <span class="fu">as_tibble</span>() <span class="sc">|&gt;</span>  rmarkdown<span class="sc">::</span><span class="fu">paged_table</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a></a>org.db <span class="ot">&lt;-</span> org.Hs.eg.db<span class="sc">::</span>org.Hs.eg.db</span>
+<span id="cb25-2"><a></a>ego <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(<span class="at">gene          =</span> eg<span class="sc">$</span>ENTREZID,</span>
+<span id="cb25-3"><a></a>                <span class="at">universe      =</span> <span class="cn">NULL</span>,</span>
+<span id="cb25-4"><a></a>                <span class="at">OrgDb         =</span> org.db,</span>
+<span id="cb25-5"><a></a>                <span class="at">keyType =</span> <span class="st">"ENTREZID"</span>,</span>
+<span id="cb25-6"><a></a>                <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
+<span id="cb25-7"><a></a>                <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb25-8"><a></a>                <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb25-9"><a></a>                <span class="at">qvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb25-10"><a></a>                <span class="at">readable      =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb25-11"><a></a></span>
+<span id="cb25-12"><a></a>ego <span class="sc">|&gt;</span> <span class="fu">as_tibble</span>() <span class="sc">|&gt;</span>  rmarkdown<span class="sc">::</span><span class="fu">paged_table</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div data-pagedtable="false">
   <script data-pagedtable-source="" type="application/json">
@@ -1816,6 +1816,7 @@ Top 10 variable features:
 </div>
 </div>
 </div>
+
 <div class="quarto-auto-generated-content">
 <p><img src="images/Biostat_logo-rvb.png" class="slide-logo"></p>
 <div class="footer footer-default">
@@ -1841,19 +1842,19 @@ Van Der Maaten, Laurens. 2014. <span>“Accelerating t-SNE Using Tree-Based Algo
   </div>
 
   <script>window.backupDefine = window.define; window.define = undefined;</script>
-  <script src="index_files/libs/revealjs/dist/reveal.js"></script>
+  <script src="../site_libs/revealjs/dist/reveal.js"></script>
   <!-- reveal.js plugins -->
-  <script src="index_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
-  <script src="index_files/libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
-  <script src="index_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
-  <script src="index_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
-  <script src="index_files/libs/revealjs/plugin/quarto-support/support.js"></script>
+  <script src="../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="../site_libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="../site_libs/revealjs/plugin/quarto-support/support.js"></script>
   
 
-  <script src="index_files/libs/revealjs/plugin/notes/notes.js"></script>
-  <script src="index_files/libs/revealjs/plugin/search/search.js"></script>
-  <script src="index_files/libs/revealjs/plugin/zoom/zoom.js"></script>
-  <script src="index_files/libs/revealjs/plugin/math/math.js"></script>
+  <script src="../site_libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="../site_libs/revealjs/plugin/search/search.js"></script>
+  <script src="../site_libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="../site_libs/revealjs/plugin/math/math.js"></script>
   <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
 
   <script>

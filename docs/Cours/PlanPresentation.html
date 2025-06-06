@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Initiation à l’analyse de données single-cell RNA-seq avec Seurat – Formation Seurat pour la plateforme Genotoul Biostat</title>
+<title>Plan du cours - Notes pour construction – Formation Seurat pour la plateforme Genotoul Biostat</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,59 +20,25 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-/* CSS for syntax highlighting */
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -101,17 +67,46 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
-<body class="nav-sidebar docked nav-fixed fullcontent">
+<body class="nav-sidebar docked nav-fixed">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">Formation Seurat pour la plateforme Genotoul Biostat</span>
     </a>
   </div>
@@ -122,7 +117,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> <i class="bi bi-house" role="img">
+    <a class="nav-link" href="../index.html"> <i class="bi bi-house" role="img">
 </i> 
 <span class="menu-text">Home</span></a>
   </li>  
@@ -147,7 +142,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Initiation à l’analyse de données single-cell RNA-seq avec Seurat</li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Cours/index.html">Initiation à l’analyse de données single-cell RNA-seq avec Seurat</a></li><li class="breadcrumb-item"><a href="../Cours/PlanPresentation.html">Plan du cours - Notes pour construction</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -178,19 +173,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Exercices/TP-Partie1.html" class="sidebar-item-text sidebar-link">
+  <a href="../Exercices/TP-Partie1.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">TP - Partie 1</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Exercices/TP-Partie2.html" class="sidebar-item-text sidebar-link">
+  <a href="../Exercices/TP-Partie2.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">TP - Partie 2</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Exercices/TP-Partie3.html" class="sidebar-item-text sidebar-link">
+  <a href="../Exercices/TP-Partie3.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">TP - Partie 3</span></a>
   </div>
 </li>
@@ -198,7 +193,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="./Cours/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../Cours/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Initiation à l'analyse de données single-cell RNA-seq avec Seurat</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -207,13 +202,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Cours/MaterielSlides.html" class="sidebar-item-text sidebar-link">
+  <a href="../Cours/MaterielSlides.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Materiel pour slides</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Cours/PlanPresentation.html" class="sidebar-item-text sidebar-link">
+  <a href="../Cours/PlanPresentation.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Plan du cours - Notes pour construction</span></a>
   </div>
 </li>
@@ -221,16 +216,48 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
     </ul>
     </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul class="collapse">
+  <li><a href="#preparation-des-données" id="toc-preparation-des-données" class="nav-link active" data-scroll-target="#preparation-des-données"><span class="header-section-number">1</span> Preparation des données</a>
+  <ul class="collapse">
+  <li><a href="#bulk-rna-seq-vs-single-cell-rnaseq" id="toc-bulk-rna-seq-vs-single-cell-rnaseq" class="nav-link" data-scroll-target="#bulk-rna-seq-vs-single-cell-rnaseq"><span class="header-section-number">1.1</span> bulk RNA-seq vs single-cell RNAseq</a></li>
+  <li><a href="#alignement---filtrage-cellranger" id="toc-alignement---filtrage-cellranger" class="nav-link" data-scroll-target="#alignement---filtrage-cellranger"><span class="header-section-number">1.2</span> Alignement - filtrage CellRanger</a></li>
+  <li><a href="#objet-seurat" id="toc-objet-seurat" class="nav-link" data-scroll-target="#objet-seurat"><span class="header-section-number">1.3</span> Objet Seurat</a></li>
+  </ul></li>
+  <li><a href="#pipeline-danalyse-dune-condition-biologique" id="toc-pipeline-danalyse-dune-condition-biologique" class="nav-link" data-scroll-target="#pipeline-danalyse-dune-condition-biologique"><span class="header-section-number">2</span> Pipeline d’analyse d’une condition biologique</a>
+  <ul class="collapse">
+  <li><a href="#normalisation-et-contrôle-qualité" id="toc-normalisation-et-contrôle-qualité" class="nav-link" data-scroll-target="#normalisation-et-contrôle-qualité"><span class="header-section-number">2.1</span> Normalisation et contrôle qualité</a></li>
+  <li><a href="#réduction-de-dimension" id="toc-réduction-de-dimension" class="nav-link" data-scroll-target="#réduction-de-dimension"><span class="header-section-number">2.2</span> Réduction de dimension</a></li>
+  <li><a href="#clustering" id="toc-clustering" class="nav-link" data-scroll-target="#clustering"><span class="header-section-number">2.3</span> Clustering</a></li>
+  <li><a href="#marker-gene" id="toc-marker-gene" class="nav-link" data-scroll-target="#marker-gene"><span class="header-section-number">2.4</span> Marker gene</a></li>
+  </ul></li>
+  <li><a href="#analyse-de-deux-ou-plus-conditions-biologiques" id="toc-analyse-de-deux-ou-plus-conditions-biologiques" class="nav-link" data-scroll-target="#analyse-de-deux-ou-plus-conditions-biologiques"><span class="header-section-number">3</span> Analyse de deux (ou plus) conditions biologiques</a>
+  <ul class="collapse">
+  <li><a href="#integration-des-données" id="toc-integration-des-données" class="nav-link" data-scroll-target="#integration-des-données"><span class="header-section-number">3.1</span> Integration des données</a></li>
+  <li><a href="#reduction-de-dimension-et-clustering" id="toc-reduction-de-dimension-et-clustering" class="nav-link" data-scroll-target="#reduction-de-dimension-et-clustering"><span class="header-section-number">3.2</span> Reduction de dimension et clustering</a></li>
+  <li><a href="#analyse-differentielle" id="toc-analyse-differentielle" class="nav-link" data-scroll-target="#analyse-differentielle"><span class="header-section-number">3.3</span> Analyse differentielle</a></li>
+  </ul></li>
+  <li><a href="#pour-aller-plus-loin" id="toc-pour-aller-plus-loin" class="nav-link" data-scroll-target="#pour-aller-plus-loin"><span class="header-section-number">4</span> Pour aller plus loin</a>
+  <ul class="collapse">
+  <li><a href="#intégration-de-différents-types-domiques" id="toc-intégration-de-différents-types-domiques" class="nav-link" data-scroll-target="#intégration-de-différents-types-domiques"><span class="header-section-number">4.1</span> Intégration de différents types d’omiques</a></li>
+  <li><a href="#analyse-de-données-de-spatial-transcriptomique" id="toc-analyse-de-données-de-spatial-transcriptomique" class="nav-link" data-scroll-target="#analyse-de-données-de-spatial-transcriptomique"><span class="header-section-number">4.2</span> Analyse de données de spatial transcriptomique</a></li>
+  <li><a href="#et-au-delà-de-seurat" id="toc-et-au-delà-de-seurat" class="nav-link" data-scroll-target="#et-au-delà-de-seurat"><span class="header-section-number">4.3</span> Et au delà de Seurat</a></li>
+  </ul></li>
+  </ul>
+</nav>
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Cours/index.html">Initiation à l’analyse de données single-cell RNA-seq avec Seurat</a></li><li class="breadcrumb-item"><a href="../Cours/PlanPresentation.html">Plan du cours - Notes pour construction</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Initiation à l’analyse de données single-cell RNA-seq avec Seurat</h1>
+<h1 class="title">Plan du cours - Notes pour construction</h1>
 </div>
 
 
@@ -238,6 +265,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="quarto-title-meta">
 
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">Invalid Date</p>
+    </div>
+  </div>
   
     
   </div>
@@ -247,70 +280,231 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p><strong>Mots-clés</strong> : single-cell RNA-seq, clustering, marker genes, integration, Seurat</p>
-<section id="préambule" class="level1">
-<h1>Préambule</h1>
-<section id="informations-essentielles" class="level2">
-<h2 class="anchored" data-anchor-id="informations-essentielles">Informations essentielles</h2>
+<section id="preparation-des-données" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Preparation des données</h1>
+<section id="bulk-rna-seq-vs-single-cell-rnaseq" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="bulk-rna-seq-vs-single-cell-rnaseq"><span class="header-section-number">1.1</span> bulk RNA-seq vs single-cell RNAseq</h2>
 <ul>
-<li><strong>Durée de la formation</strong> : 1,5 jours</li>
-<li><strong>Dates</strong> : 16 et 17 juin 2025</li>
-<li><strong>Lieu</strong> : INSA Toulouse Département Génie Mathématiques et Modélisation 135 avenue de Rangueil 31077 TOULOUSE</li>
+<li>présenter les differences entre les deux techno</li>
+</ul>
+<p>image classique image de différence des tableaux schématique</p>
+</section>
+<section id="alignement---filtrage-cellranger" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="alignement---filtrage-cellranger"><span class="header-section-number">1.2</span> Alignement - filtrage CellRanger</h2>
+<ul>
+<li>expliquer le pipeline general de CellRanger</li>
+<li>expliquer le rendu</li>
+<li>On obtient une matrice de comptages filtrée (ex: du fichier pbmc3k) on a 3 fichiers (barcodes.tsv / gene.tsv / matrix.mtx) image de CellRanger + type fichier</li>
 </ul>
 </section>
-<section id="description" class="level2">
-<h2 class="anchored" data-anchor-id="description">Description</h2>
-<p>La formation a pour but de vous familiariser avec les grandes étapes d’analyse de données single-cell RNA-seq et de les mettre en application à l’aide du package Seurat. Rem: cette formation est aussi une bonne base pour l’étude des données de Spatial Transcriptomics.</p>
-</section>
-<section id="objectifs" class="level2">
-<h2 class="anchored" data-anchor-id="objectifs">Objectifs</h2>
-<p>À la fin de la formation, vous serez capable de mener une analyse de données single-cell RNA-seq avec Seurat.</p>
-</section>
-<section id="notions-abordées" class="level2">
-<h2 class="anchored" data-anchor-id="notions-abordées">Notions abordées</h2>
-<p><strong>À mettre à jour une fois le contenu terminé</strong></p>
+<section id="objet-seurat" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="objet-seurat"><span class="header-section-number">1.3</span> Objet Seurat</h2>
 <ul>
-<li>Construction de l’objet Seurat</li>
-<li>Les grandes étapes du pipeline d’analyse de données single-cell RNA-seq</li>
-<li>Leur mise en application avec Seurat</li>
+<li>Expliquer que chaque pipeline a son type d’Objet
+<ul>
+<li>Seurat en R <span class="math inline">\(\longrightarrow\)</span> Seurat Object</li>
+<li>Scanpy en python <span class="math inline">\(\longrightarrow\)</span> AnnData class</li>
+</ul></li>
+<li>Dans la suite on va travailler avec Seurat</li>
+<li>création de l’objet Seurat (SO) pour démarrer schéma évolutif de ce que l’on a rempli dans l’object</li>
 </ul>
 </section>
-<section id="pré-requis" class="level2">
-<h2 class="anchored" data-anchor-id="pré-requis">Pré-requis</h2>
-<ul>
-<li>Avoir des bases de programmation avec <code>R</code>.</li>
-</ul>
-<p>#&nbsp;Installation des librairies avant le début de la formation</p>
-<section id="dependencies" class="level3">
-<h3 class="anchored" data-anchor-id="dependencies">Dependencies</h3>
-<p>To install the dependencies, follow these steps:</p>
-<ol type="1">
-<li><p><strong>Install <code>renv</code></strong>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"renv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
-<li><p><strong>Restore the <code>renv</code> environment</strong>:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">restore</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
-</ol>
 </section>
-<section id="rendering-the-project" class="level3">
-<h3 class="anchored" data-anchor-id="rendering-the-project">Rendering the Project</h3>
-<p>To render the project using Quarto, follow these steps:</p>
-<ol type="1">
-<li><p><strong>Install Quarto</strong>: Follow the instructions on the <a href="https://quarto.org/docs/get-started/">Quarto website</a> to install Quarto on your system.</p>
-<blockquote class="blockquote">
-<p>Quarto should be already installed in rstudio.</p>
-</blockquote></li>
-<li><p><strong>Render the project</strong>:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
-</ol>
-<p>This will generate the rendered output of your project.</p>
-<p>By default, vignettes are not rendered. To run vignettes using quarto:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render vignettes/<span class="pp">*</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<blockquote class="blockquote">
-<p>Running this for the first time will download the data for the vignettes</p>
-</blockquote>
+<section id="pipeline-danalyse-dune-condition-biologique" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Pipeline d’analyse d’une condition biologique</h1>
+<section id="normalisation-et-contrôle-qualité" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="normalisation-et-contrôle-qualité"><span class="header-section-number">2.1</span> Normalisation et contrôle qualité</h2>
+<section id="controles-initiaux" class="level3" data-number="2.1.1">
+<h3 data-number="2.1.1" class="anchored" data-anchor-id="controles-initiaux"><span class="header-section-number">2.1.1</span> Controles initiaux</h3>
+</section>
+<section id="normalisation" class="level3" data-number="2.1.2">
+<h3 data-number="2.1.2" class="anchored" data-anchor-id="normalisation"><span class="header-section-number">2.1.2</span> Normalisation</h3>
+</section>
+<section id="hvg" class="level3" data-number="2.1.3">
+<h3 data-number="2.1.3" class="anchored" data-anchor-id="hvg"><span class="header-section-number">2.1.3</span> HVG</h3>
+</section>
+</section>
+<section id="réduction-de-dimension" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="réduction-de-dimension"><span class="header-section-number">2.2</span> Réduction de dimension</h2>
+<section id="objectifs-de-la-réduction-de-dimension" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="objectifs-de-la-réduction-de-dimension"><span class="header-section-number">2.2.1</span> Objectifs de la réduction de dimension</h3>
+</section>
+<section id="pca" class="level3" data-number="2.2.2">
+<h3 data-number="2.2.2" class="anchored" data-anchor-id="pca"><span class="header-section-number">2.2.2</span> PCA</h3>
+<ul>
+<li>scale + runPCA</li>
+<li>explication du principe de la PCA</li>
+<li>explication des sorties de Seurat</li>
+<li>expliquer où c’est stocké dans l’objet</li>
+</ul>
+</section>
+<section id="umap" class="level3" data-number="2.2.3">
+<h3 data-number="2.2.3" class="anchored" data-anchor-id="umap"><span class="header-section-number">2.2.3</span> UMAP</h3>
+<ul>
+<li>utilise au démarrage les coordonnées de PCA</li>
+<li>explication du principe de l’UMAP</li>
+<li>illustration</li>
+</ul>
+</section>
+</section>
+<section id="clustering" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="clustering"><span class="header-section-number">2.3</span> Clustering</h2>
+<section id="principe-objectif-du-clustering" class="level3" data-number="2.3.1">
+<h3 data-number="2.3.1" class="anchored" data-anchor-id="principe-objectif-du-clustering"><span class="header-section-number">2.3.1</span> Principe / objectif du clustering</h3>
+</section>
+<section id="some-methods" class="level3" data-number="2.3.2">
+<h3 data-number="2.3.2" class="anchored" data-anchor-id="some-methods"><span class="header-section-number">2.3.2</span> Some methods</h3>
+</section>
+<section id="dans-seurat" class="level3" data-number="2.3.3">
+<h3 data-number="2.3.3" class="anchored" data-anchor-id="dans-seurat"><span class="header-section-number">2.3.3</span> Dans Seurat</h3>
+<ul>
+<li>explication du principe de Louvain</li>
+<li>nécessite un parametre de résolution (pas nb de clusters K)</li>
+<li>exemple pour une valeur de résolution (FindNeighbour + FindCluster)</li>
+<li>exemple de plot sur UMAP, effectifs par classe, ….</li>
+</ul>
+</section>
+<section id="choix-de-la-resolution" class="level3" data-number="2.3.4">
+<h3 data-number="2.3.4" class="anchored" data-anchor-id="choix-de-la-resolution"><span class="header-section-number">2.3.4</span> Choix de la resolution ?</h3>
+<ul>
+<li>faire tourner pour plusieurs résolution</li>
+<li>visualisation par ARI, clustree des différents clusterings obtenus</li>
+<li>En afficher deux sur UMAP figue dissociée</li>
+<li>on peut tous les stocker dans objet SO mais attention à bien positionner celui étudié pour la suite</li>
+</ul>
+</section>
+</section>
+<section id="marker-gene" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="marker-gene"><span class="header-section-number">2.4</span> Marker gene</h2>
+<section id="question-objectif" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="question-objectif"><span class="header-section-number">2.4.1</span> Question / objectif</h3>
+<ul>
+<li>formalisation du problème</li>
+<li>naturellement on est sur une question de test</li>
+</ul>
+</section>
+<section id="wilcoxon" class="level3" data-number="2.4.2">
+<h3 data-number="2.4.2" class="anchored" data-anchor-id="wilcoxon"><span class="header-section-number">2.4.2</span> Wilcoxon</h3>
+<ul>
+<li>explication du test de Wilcoxon</li>
+<li>correction de test multiple</li>
+<li>sur l’exemple, montrer le grand nombre de gènes sélectionnés</li>
+</ul>
+</section>
+<section id="problème-de-double-dipping" class="level3" data-number="2.4.3">
+<h3 data-number="2.4.3" class="anchored" data-anchor-id="problème-de-double-dipping"><span class="header-section-number">2.4.3</span> Problème de double-dipping</h3>
+<ul>
+<li>mettre l’exemple classique sur une classe gaussienne image de article avec Nicolas</li>
+<li>reste un probleme ouvert en statistique, loin d’une solution pour le scRNAseq</li>
+</ul>
+</section>
+<section id="auc" class="level3" data-number="2.4.4">
+<h3 data-number="2.4.4" class="anchored" data-anchor-id="auc"><span class="header-section-number">2.4.4</span> AUC</h3>
+<ul>
+<li>explication de l’AUC</li>
+<li>attention ce n’est pas un test</li>
+<li>choix du seuil ?</li>
+<li>application sur l’exemple avec FindAllMarkers</li>
+</ul>
+</section>
+<section id="autres-indicateurs-dispo" class="level3" data-number="2.4.5">
+<h3 data-number="2.4.5" class="anchored" data-anchor-id="autres-indicateurs-dispo"><span class="header-section-number">2.4.5</span> Autres indicateurs dispo</h3>
+<ul>
+<li>pct.1 / pct.2</li>
+<li>log2FC</li>
+</ul>
+</section>
+<section id="exemple" class="level3" data-number="2.4.6">
+<h3 data-number="2.4.6" class="anchored" data-anchor-id="exemple"><span class="header-section-number">2.4.6</span> Exemple</h3>
+<ul>
+<li>on fusionne les deux tableaux obtenus par AUC et wilcox</li>
+<li>on applique des filtres pour retenir un groupe de genes marqueurs pour chaque cluster</li>
+<li>visualisation par DoHeatmap</li>
+<li>dotPlot</li>
+<li>ridgePlot</li>
+</ul>
+</section>
+<section id="groupe-contre-un-autre" class="level3" data-number="2.4.7">
+<h3 data-number="2.4.7" class="anchored" data-anchor-id="groupe-contre-un-autre"><span class="header-section-number">2.4.7</span> 1 groupe contre un autre</h3>
+<ul>
+<li>expliquer que l’o peut faire la même chose mais en précisant une classe contre une autre, un groupe de classes contre un autre groupe de classes</li>
+<li>fonction FindMarkers</li>
+<li>le faire sur l’exemple</li>
+</ul>
+</section>
+</section>
+</section>
+<section id="analyse-de-deux-ou-plus-conditions-biologiques" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Analyse de deux (ou plus) conditions biologiques</h1>
+<section id="integration-des-données" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="integration-des-données"><span class="header-section-number">3.1</span> Integration des données</h2>
+<ul>
+<li>pas clair pour moi comment le présenter avec la normalisation, ….</li>
+</ul>
+</section>
+<section id="reduction-de-dimension-et-clustering" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="reduction-de-dimension-et-clustering"><span class="header-section-number">3.2</span> Reduction de dimension et clustering</h2>
+<ul>
+<li>On refait ici les mêmes étapes que dans le cas une condition</li>
+<li>leur faire faire sur l’exemple pour aller jusqu’à retenir un clustering</li>
+<li>analyser le clustering répartition cells par cluster par condition, ….</li>
+</ul>
+</section>
+<section id="analyse-differentielle" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="analyse-differentielle"><span class="header-section-number">3.3</span> Analyse differentielle</h2>
+<section id="principe" class="level3" data-number="3.3.1">
+<h3 data-number="3.3.1" class="anchored" data-anchor-id="principe"><span class="header-section-number">3.3.1</span> Principe</h3>
+<ul>
+<li>bien se demander quelle question on veut traiter</li>
+<li>de nombreuses stratégies mais dépend si réplicats ou pas, type de stratégie, …..</li>
+<li>donner ici quelques références de review</li>
+<li>trouver un schéma qui essaie de résumer les types de stratégies</li>
+</ul>
+</section>
+<section id="méthodes-de-type-pseudobulk" class="level3" data-number="3.3.2">
+<h3 data-number="3.3.2" class="anchored" data-anchor-id="méthodes-de-type-pseudobulk"><span class="header-section-number">3.3.2</span> Méthodes de type pseudobulk</h3>
+<ul>
+<li>principe du pseudobulk</li>
+<li>exemple de DESeq2</li>
+<li>illustration</li>
+</ul>
+</section>
+<section id="point-de-vue-sélection-de-variables" class="level3" data-number="3.3.3">
+<h3 data-number="3.3.3" class="anchored" data-anchor-id="point-de-vue-sélection-de-variables"><span class="header-section-number">3.3.3</span> Point de vue sélection de variables</h3>
+<ul>
+<li>NS-Forest ??</li>
+</ul>
+</section>
+<section id="et" class="level3" data-number="3.3.4">
+<h3 data-number="3.3.4" class="anchored" data-anchor-id="et"><span class="header-section-number">3.3.4</span> ET …?</h3>
+<p>A murir</p>
+</section>
+</section>
+</section>
+<section id="pour-aller-plus-loin" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Pour aller plus loin</h1>
+<section id="intégration-de-différents-types-domiques" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="intégration-de-différents-types-domiques"><span class="header-section-number">4.1</span> Intégration de différents types d’omiques</h2>
+</section>
+<section id="analyse-de-données-de-spatial-transcriptomique" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="analyse-de-données-de-spatial-transcriptomique"><span class="header-section-number">4.2</span> Analyse de données de spatial transcriptomique</h2>
+<ul>
+<li>On a en plus la position spatiale, 1 spot &lt;-&gt; 1 cellule</li>
+<li>On a les SVG (en plus des HVG)</li>
+<li>Le spatial intervient surtout sur le clustering. Louvain ne prend pas en compte le spatial. Passer par d’autres méthodes et stocker ensuite dans l’objet Seurat</li>
+<li>visualisation sur le spatial</li>
+</ul>
+</section>
+<section id="et-au-delà-de-seurat" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="et-au-delà-de-seurat"><span class="header-section-number">4.3</span> Et au delà de Seurat</h2>
+<ul>
+<li><p>comment on transforme un objet Seurat en autre chose</p></li>
+<li><p>comment on crée un objet Seurat à partir d’autre chose</p></li>
+<li><p>on peut sortir de Seurat pour appliquer une méthode et stocker le résultat dans SO</p></li>
+<li><p>?? voir la position de ce slide</p></li>
+</ul>
 
 
-</section>
 </section>
 </section>
 
